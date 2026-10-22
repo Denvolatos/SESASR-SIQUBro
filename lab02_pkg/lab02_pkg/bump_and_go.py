@@ -20,12 +20,16 @@ class BumpAndGo(Node):
         self.declare_parameter('goal_x', 6.5)               # [m] green cube in the maze
         self.declare_parameter('goal_y', 3.0)
         self.declare_parameter('goal_tolerance', 0.8)       # [m]
+        self.declare_parameter('rotation_tolerance_deg', 5.0)  # [deg] turn is finished below this error
+        self.declare_parameter('min_angular_vel', 0.3)      # [rad/s] real motors do not move below this
         self.v_max = self.get_parameter('max_linear_vel').value
         self.w_max = self.get_parameter('max_angular_vel').value
         self.threshold = self.get_parameter('obstacle_threshold').value
         self.stop_at_goal = self.get_parameter('stop_at_goal').value
         self.goal = (self.get_parameter('goal_x').value, self.get_parameter('goal_y').value)
         self.goal_tol = self.get_parameter('goal_tolerance').value
+        self.rot_tol = math.radians(self.get_parameter('rotation_tolerance_deg').value)
+        self.w_min = self.get_parameter('min_angular_vel').value
         period = 1.0 / self.get_parameter('control_frequency').value
 
         self.create_subscription(LaserScan, '/scan', self.scan_callback, qos_profile_sensor_data)
@@ -92,10 +96,13 @@ class BumpAndGo(Node):
         elif self.state == 'ROTATE':
             error = math.atan2(math.sin(self.target_yaw - self.yaw),
                                math.cos(self.target_yaw - self.yaw))
-            if abs(error) < math.radians(2.0):
+            if abs(error) < self.rot_tol:
                 self.state = 'GO'
             else:
-                cmd.angular.z = max(-self.w_max, min(self.w_max, 2.0 * error))   # P controller
+                w = max(-self.w_max, min(self.w_max, 2.0 * error))   # P controller
+                if abs(w) < self.w_min:                              # dead zone of the real motors
+                    w = self.w_min if w > 0 else -self.w_min
+                cmd.angular.z = w
 
         self.cmd_pub.publish(cmd)   # in 'DONE' cmd stays zero -> robot stops
 

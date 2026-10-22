@@ -118,6 +118,8 @@ Change them without editing the code: `--ros-args -p name:=value`
 | `stop_at_goal` | `true` | – | Stop near the goal; **set `false` on the real robot** |
 | `goal_x`, `goal_y` | `6.5`, `3.0` | m | Position of the green cube in the Lab02 maze |
 | `goal_tolerance` | `0.8` | m | Distance from the goal at which the robot stops |
+| `rotation_tolerance_deg` | `5.0` | deg | A turn is finished when the yaw error is below this |
+| `min_angular_vel` | `0.3` | rad/s | Minimum turning speed: the real motors do not move below it (dead zone) |
 
 Example: `ros2 run lab02_pkg bump_and_go --ros-args -p obstacle_threshold:=0.6`
 
@@ -225,7 +227,7 @@ diff = (angle - center_deg + 180.0) % 360.0 - 180.0        # 角度差，范围 
 GO      前方 > 阈值   → 以 max_linear_vel 前进
         前方 ≤ 阈值   → 选择转向方向，设定 target_yaw，进入 ROTATE
 ROTATE  |误差| ≥ 2°  → ω = 限幅(2·误差, ±max_angular_vel)
-        |误差| < 2°  → 回到 GO
+        |误差| < rotation_tolerance_deg  → 回到 GO
 DONE    （仅仿真）到达目标附近 → 速度为 0
 ```
 
@@ -260,6 +262,8 @@ error = math.atan2(math.sin(self.target_yaw - self.yaw),
 | `stop_at_goal` | `true` | – | 到目标附近停车；**真车上设为 `false`** |
 | `goal_x`, `goal_y` | `6.5`, `3.0` | m | Lab02 迷宫里绿块的位置 |
 | `goal_tolerance` | `0.8` | m | 离目标多近就停车 |
+| `rotation_tolerance_deg` | `5.0` | deg | 偏航角误差小于它就算转完 |
+| `min_angular_vel` | `0.3` | rad/s | 最小转速：真车电机低于这个速度转不动（死区） |
 
 例子：`ros2 run lab02_pkg bump_and_go --ros-args -p obstacle_threshold:=0.6`
 
