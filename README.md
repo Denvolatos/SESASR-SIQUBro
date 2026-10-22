@@ -13,6 +13,21 @@
 
 ![Trajectory in the Lab02 maze](docs/images/lab02_sim_trajectory.png)
 
+## 👥 Meet the SIQUBro crew / 认识一下 SIQUBro 小分队
+
+> Four humans, one TurtleBot3, zero walls touched (we hope).
+> 四个人，一台 TurtleBot3，撞墙次数：0（理论上）。
+
+| | Member | Official title / 官方头衔 | Superpower / 超能力 |
+|---|---|---|---|
+| 🧭 | **Chen** | Chief Odometry Officer · 首席里程计官 | Knows where the robot *thinks* it is. Where it *really* is — still under investigation. 知道小车*以为*自己在哪；它*实际*在哪，仍在调查中。 |
+| 🔦 | **Jin** | Head of LiDAR Affairs · 激光雷达事务部部长 | Can count 230 laser rays in 0.2 s and says `inf` is just "optimism". 0.2 秒数完 230 条激光，坚称 `inf` 只是"乐观"。 |
+| 🔄 | **Ye** | Minister of 90° Turns · 九十度转弯部长 | Turns left or right with the confidence of a P controller. 以 P 控制器般的自信左转右转。 |
+| 🧱 | **Qu** | Wall Relations Manager · 墙体关系协调员 | Negotiates peace between the robot and every wall within 0.5 m. 负责调解小车与 0.5 m 内所有墙壁的关系。 |
+
+**Team motto / 队训：** *Bump less, go more.* · *少撞墙，多前进。*
+
+
 ---
 
 ## 🇬🇧 English
