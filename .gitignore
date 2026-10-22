@@ -1,0 +1,15 @@
+# colcon build output
+build/
+install/
+log/
+# Python
+__pycache__/
+*.pyc
+# rosbag recordings (share them via cloud storage, not git)
+bags/
+*.db3
+*.mcap
+# plots generated from bags
+plots/
+# macOS
+.DS_Store
