@@ -186,7 +186,30 @@ ros2 launch turtlebot3_bringup rviz2.launch.py
 
 (In a virtual machine add `export LIBGL_ALWAYS_SOFTWARE=1` first.)
 
-More problems? See the **Troubleshooting** table in the [README](../README.md).
+### Part 8 — Troubleshooting
+
+
+| Problem | Cause → Fix |
+|---|---|
+| `Package 'lab02_pkg' not found` | Workspace not sourced in this terminal → `source ~/ros2_ws/install/setup.bash` |
+| Gazebo crashes with `Segmentation fault` / `OpenGL 3.3 is not supported` (virtual machine) | VM graphics too old → `export LIBGL_ALWAYS_SOFTWARE=1` before launching |
+| No topics after restarting Gazebo | An old Gazebo server is still running → wait for the prompt after `Ctrl+C`, or `pkill -f gazebo` |
+| No `/scan` messages on the real robot | Wrong QoS → the subscription must use `qos_profile_sensor_data` (already done) |
+| No topics on the real robot | `pkill -9 -f ros && ros2 daemon stop`, then restart the bringup |
+| Robot stops too close to the wall | Reaction delay + inertia → increase `obstacle_threshold` (e.g. `0.6`) |
+| Lidar rays not visible in Gazebo Fortress | Add the *Visualize Lidar* plugin (⋮ menu), refresh, select `/scan` |
+
+### Part 9 — Working as a team (git)
+
+
+```bash
+git pull                     # before you start
+# ... edit, test ...
+git add -A && git commit -m "describe the change"
+git push
+```
+
+Every member must be able to explain the code at the oral exam: read it, run it, and change the parameters yourself.
 
 ---
 
@@ -372,4 +395,27 @@ ros2 launch turtlebot3_bringup rviz2.launch.py
 
 （在虚拟机里要先加 `export LIBGL_ALWAYS_SOFTWARE=1`。）
 
-还有其他问题？看 [README](../README.md) 里的**常见问题**表。
+### 第 8 部分：常见问题
+
+
+| 问题 | 原因 → 解决 |
+|---|---|
+| `Package 'lab02_pkg' not found` | 这个终端没 source 工作区 → `source ~/ros2_ws/install/setup.bash` |
+| 虚拟机里 Gazebo 崩溃：`Segmentation fault` / `OpenGL 3.3 is not supported` | 虚拟显卡不支持 → 启动前 `export LIBGL_ALWAYS_SOFTWARE=1` |
+| 重开 Gazebo 后没有话题 | 旧的 Gazebo 服务器还在跑 → `Ctrl+C` 后等提示符出现再重开，或 `pkill -f gazebo` |
+| 真车上收不到 `/scan` | QoS 不对 → 订阅要用 `qos_profile_sensor_data`（已改好） |
+| 真车上看不到话题 | `pkill -9 -f ros && ros2 daemon stop`，再重新 bringup |
+| 车离墙太近才停 | 反应延迟 + 惯性 → 调大 `obstacle_threshold`（如 `0.6`） |
+| Gazebo Fortress 里看不到激光线 | 在 ⋮ 菜单加 *Visualize Lidar* 插件，点刷新，选 `/scan` |
+
+### 第 9 部分：小组协作（git）
+
+
+```bash
+git pull                     # 开始前先拉取
+# ……修改、测试……
+git add -A && git commit -m "写清楚改了什么"
+git push
+```
+
+答辩时每个人都要能讲清楚这份代码：自己读一遍、自己运行、自己改改参数试试。

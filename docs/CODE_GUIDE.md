@@ -105,6 +105,22 @@ error = math.atan2(math.sin(self.target_yaw - self.yaw),
 
 A new `Twist()` has all velocities equal to 0, so in `DONE` (or when nothing is set) the published command stops the robot.
 
+### 2b. ⚙️ Parameters
+
+Change them without editing the code: `--ros-args -p name:=value`
+
+| Parameter | Default | Unit | Meaning |
+|---|---|---|---|
+| `max_linear_vel` | `0.22` | m/s | Forward speed (TurtleBot3 Burger limit: 0.22) |
+| `max_angular_vel` | `1.5` | rad/s | Maximum turning speed (robot limit 2.84, 1.5 suggested) |
+| `control_frequency` | `10.0` | Hz | Frequency of the control loop |
+| `obstacle_threshold` | `0.5` | m | Distance in front that triggers a turn |
+| `stop_at_goal` | `true` | – | Stop near the goal; **set `false` on the real robot** |
+| `goal_x`, `goal_y` | `6.5`, `3.0` | m | Position of the green cube in the Lab02 maze |
+| `goal_tolerance` | `0.8` | m | Distance from the goal at which the robot stops |
+
+Example: `ros2 run lab02_pkg bump_and_go --ros-args -p obstacle_threshold:=0.6`
+
 ### 3. `scripts/plot_bag.py`
 
 | Section | What it does |
@@ -230,6 +246,22 @@ error = math.atan2(math.sin(self.target_yaw - self.yaw),
 `atan2(sin, cos)` 把误差限制在 [−π, π]：从 −179° 转到 +179° 只需转 2°，而不是 358°。
 
 新建的 `Twist()` 所有速度都是 0，所以在 `DONE` 状态（或没有设置速度时）发出去的指令就是停车。
+
+### 2b. ⚙️ 参数
+
+不改代码就能调：`--ros-args -p 参数名:=值`
+
+| 参数 | 默认值 | 单位 | 含义 |
+|---|---|---|---|
+| `max_linear_vel` | `0.22` | m/s | 前进速度（TurtleBot3 Burger 上限 0.22） |
+| `max_angular_vel` | `1.5` | rad/s | 最大转速（机器人上限 2.84，建议 1.5） |
+| `control_frequency` | `10.0` | Hz | 控制循环频率 |
+| `obstacle_threshold` | `0.5` | m | 前方距离小于它就转弯 |
+| `stop_at_goal` | `true` | – | 到目标附近停车；**真车上设为 `false`** |
+| `goal_x`, `goal_y` | `6.5`, `3.0` | m | Lab02 迷宫里绿块的位置 |
+| `goal_tolerance` | `0.8` | m | 离目标多近就停车 |
+
+例子：`ros2 run lab02_pkg bump_and_go --ros-args -p obstacle_threshold:=0.6`
 
 ### 3. `scripts/plot_bag.py`
 
