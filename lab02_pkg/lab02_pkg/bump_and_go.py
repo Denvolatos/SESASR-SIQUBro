@@ -2,6 +2,8 @@ import math
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.executors import ExternalShutdownException
+from rclpy.signals import SignalHandlerOptions
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
@@ -36,8 +38,11 @@ class BumpAndGo(Node):
         self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.create_timer(period, self.control_loop)
+        self.create_timer(2.0, self.status_log)             # diagnostics every 2 s
 
         self.scan = None
+        self.got_odom = False
+        self.last_cmd = Twist()
         self.x = self.y = self.yaw = 0.0
         self.state = 'GO'          # 'GO', 'ROTATE' or 'DONE'
         self.target_yaw = 0.0
@@ -47,6 +52,7 @@ class BumpAndGo(Node):
         self.scan = msg
 
     def odom_callback(self, msg):
+        self.got_odom = True
         self.x = msg.pose.pose.position.x
         self.y = msg.pose.pose.position.y
         q = msg.pose.pose.orientation
@@ -105,11 +111,37 @@ class BumpAndGo(Node):
                 cmd.angular.z = w
 
         self.cmd_pub.publish(cmd)   # in 'DONE' cmd stays zero -> robot stops
+        self.last_cmd = cmd
+
+    # ---------- 5. Diagnostics and safe stop ----------
+    def status_log(self):
+        """Print what the controller sees and sends, to debug the real robot."""
+        if self.scan is None:
+            self.get_logger().warn('waiting for /scan ... (no LiDAR data received yet)')
+            return
+        front = self.sector_distance(0.0, 15.0)
+        self.get_logger().info(
+            f'state={self.state} front={front:.2f} m  '
+            f'v={self.last_cmd.linear.x:.2f} m/s  w={self.last_cmd.angular.z:.2f} rad/s  '
+            f'odom={"OK" if self.got_odom else "MISSING"}')
+
+    def stop_robot(self):
+        """Send zero velocity, so the robot does not keep the last command after Ctrl+C."""
+        for _ in range(3):
+            self.cmd_pub.publish(Twist())
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    # handle Ctrl+C ourselves, so ROS is still running when we send the stop command
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
     node = BumpAndGo()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):   # Ctrl+C
+        pass
+    finally:
+        if rclpy.ok():
+            node.stop_robot()
+            node.get_logger().info('stopped: zero velocity sent')
+        node.destroy_node()
+        rclpy.try_shutdown()

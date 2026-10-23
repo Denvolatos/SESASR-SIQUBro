@@ -211,6 +211,29 @@ git push
 
 Every member must be able to explain the code at the oral exam: read it, run it, and change the parameters yourself.
 
+### Part 10 — Real-robot debugging notes and Lab04 checklist
+
+What we learned on 22/10 (robot 3) and in simulation tests:
+
+| Test (simulation, motor dead zone added with `scripts/deadzone_filter.py`) | Result |
+|---|---|
+| A: old parameters (2° tolerance, no minimum ω) | Drives 4 m, then **stuck forever in the first turn**: the P controller asks for ω≈0.17 rad/s, below the dead zone |
+| B: new parameters (5° tolerance, minimum ω 0.3) | **Reaches the goal in 160 s** |
+| C: extra node publishing zero velocity | Still drives forward → not the cause of "not moving at start" |
+| D: obstacle in front at start | Turns immediately, then stuck → does not match what we saw |
+
+Conclusion: the controller logic is correct; "not moving at start" on the real robot was most likely a communication problem (the Zenoh router stopped several times; nodes started before a router restart cannot reach the robot).
+
+**Lab04 checklist**
+
+1. Start in this order, each in its own terminal, and never close them: **router → bringup → (rosbag) → controller**. If the router is restarted, restart bringup and the controller too.
+2. Check the router is listening: `ss -ltn | grep 7447`
+3. Test the motors alone (robot lifted): `ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.22}}"`
+4. Run the controller and read its status line every 2 s (`state=... v=... odom=...`).
+5. In another terminal: `ros2 topic info /cmd_vel` → `Publisher count: 1`, `Subscription count: 1`.
+6. If bringup prints `There is no status packet` / `stack smashing detected`: power the motor board off for 10 s, on again (wait for the music), restart bringup.
+7. Test runner: `scripts/run_dz_test.sh <label> <tolerance_deg> <min_w> <seconds> [none|zero|box]` (simulation, Gazebo Classic).
+
 ---
 
 ## 🇨🇳 中文
@@ -419,3 +442,27 @@ git push
 ```
 
 答辩时每个人都要能讲清楚这份代码：自己读一遍、自己运行、自己改改参数试试。
+
+### 第 10 部分：真车排障记录和 Lab04 检查清单
+
+10/22（3 号机器人）和之后仿真测试的结论：
+
+| 测试（仿真，用 `scripts/deadzone_filter.py` 加入电机死区） | 结果 |
+|---|---|
+| A：旧参数（容差 2°、没有最小转速） | 走了 4 m 后**卡在第一个弯**：P 控制给出的转速约 0.17 rad/s，低于死区 |
+| B：新参数（容差 5°、最小转速 0.3） | **160 秒到达终点** |
+| C：另有程序一直发零速度 | 车照样往前走，不是"一开始不动"的原因 |
+| D：开局车前就有障碍 | 立刻转弯后卡住，和当天现象不符 |
+
+结论：控制器逻辑没问题；真车"一开始不动"最可能是通信问题（当天 zenoh 路由停过好几次，路由重启前启动的节点连不上车）。
+
+**Lab04 检查清单**
+
+1. 按顺序启动，每个一个终端，开了就别关：**路由 → bringup →（录制）→ 控制器**。路由一旦重启，bringup 和控制器也要重启。
+2. 确认路由在监听：`ss -ltn | grep 7447`
+3. 单独测电机（车架空）：`ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.22}}"`
+4. 运行控制器，看它每 2 秒打印的状态（`state=... v=... odom=...`）。
+5. 另一个终端：`ros2 topic info /cmd_vel` → `Publisher count: 1`、`Subscription count: 1`。
+6. bringup 报 `There is no status packet` / `stack smashing detected`：电机板断电 10 秒再开（等音乐响完），重启 bringup。
+7. 测试脚本：`scripts/run_dz_test.sh <标签> <容差°> <最小转速> <秒> [none|zero|box]`（仿真，Gazebo Classic）。
+

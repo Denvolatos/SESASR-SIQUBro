@@ -33,7 +33,7 @@ Group repository for the labs of *Sensors, Embedded Systems and Algorithms for S
 ```
 SESASR-SIQUBro/
 ├── lab02_pkg/            # ROS 2 package with the bump_and_go node · 控制器 ROS 2 包
-├── scripts/plot_bag.py   # rosbag -> report plots (PDF/PNG) · 把 rosbag 画成报告图
+├── scripts/              # plot_bag.py (report plots), dead-zone test tools · 画图脚本、死区测试工具
 └── docs/                 # guides and example plots · 指南和示例图
 ```
 

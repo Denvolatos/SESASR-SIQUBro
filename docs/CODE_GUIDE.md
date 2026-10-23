@@ -31,7 +31,7 @@ Read it as: *the command `bump_and_go` runs the function `main` in the file `lab
 
 ### 2. `bump_and_go.py`, section by section
 
-The file is split into four sections, marked with `# ---------- N. ... ----------`.
+The file is split into five sections, marked with `# ---------- N. ... ----------`.
 
 #### Section 1 — Setup (`__init__`)
 
@@ -123,6 +123,12 @@ Change them without editing the code: `--ros-args -p name:=value`
 
 Example: `ros2 run lab02_pkg bump_and_go --ros-args -p obstacle_threshold:=0.6`
 
+#### Section 5 — Diagnostics and safe stop
+
+- `status_log` runs every 2 s and prints what the controller sees and sends:
+  `state=GO front=1.85 m  v=0.22 m/s  w=0.00 rad/s  odom=OK`. Before the first LiDAR message it prints `waiting for /scan ...`. Use it to tell apart "the controller does not send forward" from "the controller sends forward but the robot does not move".
+- `stop_robot` publishes a zero `Twist` three times. `main` calls it when you press `Ctrl+C`, so the robot does not keep driving with the last command. For this, `rclpy.init(..., signal_handler_options=SignalHandlerOptions.NO)` lets our code handle `Ctrl+C` while ROS is still running.
+
 ### 3. `scripts/plot_bag.py`
 
 | Section | What it does |
@@ -175,7 +181,7 @@ lab02_pkg/
 
 ### 2. `bump_and_go.py` 逐段讲解
 
-文件分 4 段，每段开头有 `# ---------- N. ... ----------` 标记。
+文件分 5 段，每段开头有 `# ---------- N. ... ----------` 标记。
 
 #### 第 1 段：初始化（`__init__`）
 
@@ -266,6 +272,12 @@ error = math.atan2(math.sin(self.target_yaw - self.yaw),
 | `min_angular_vel` | `0.3` | rad/s | 最小转速：真车电机低于这个速度转不动（死区） |
 
 例子：`ros2 run lab02_pkg bump_and_go --ros-args -p obstacle_threshold:=0.6`
+
+#### 第 5 段：诊断信息和安全停车
+
+- `status_log` 每 2 秒打印一次控制器看到了什么、发出了什么：
+  `state=GO front=1.85 m  v=0.22 m/s  w=0.00 rad/s  odom=OK`。还没收到雷达数据时打印 `waiting for /scan ...`。用它可以分清"控制器没发前进指令"和"发了前进指令但车没动"。
+- `stop_robot` 连发三次零速度。按 `Ctrl+C` 时 `main` 会调用它，车就不会继续执行最后一条指令。为此 `rclpy.init(..., signal_handler_options=SignalHandlerOptions.NO)` 让我们自己的代码来处理 `Ctrl+C`，此时 ROS 还没关闭，停车指令还能发出去。
 
 ### 3. `scripts/plot_bag.py`
 
