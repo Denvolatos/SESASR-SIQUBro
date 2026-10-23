@@ -13,8 +13,8 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='denvolatos',
-    maintainer_email='denvolatos@todo.todo',
+    maintainer='SIQUBro (SESASR group 203)',
+    maintainer_email='siqubro@todo.todo',
     description='TODO: Package description',
     license='TODO: License declaration',
     extras_require={

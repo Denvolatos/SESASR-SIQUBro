@@ -4,7 +4,7 @@
   <name>lab02_pkg</name>
   <version>0.0.0</version>
   <description>Bump&amp;Go controller for TurtleBot3 (SESASR Lab02/Lab03)</description>
-  <maintainer email="denvolatos@todo.todo">denvolatos</maintainer>
+  <maintainer email="siqubro@todo.todo">SIQUBro (SESASR group 203)</maintainer>
   <license>TODO: License declaration</license>
 
   <depend>rclpy</depend>
