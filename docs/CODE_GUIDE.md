@@ -9,8 +9,8 @@
 ### 1. Package layout
 
 ```
-lab02_pkg/
-├── package.xml          # package metadata and dependencies (rclpy, geometry_msgs, sensor_msgs, nav_msgs)
+src/lab02_pkg/
+├── package.xml          # package metadata and dependencies (including tf_transformations)
 ├── setup.py             # installation; registers the executable "bump_and_go"
 ├── setup.cfg            # needed by ros2 run (do not modify)
 ├── resource/lab02_pkg   # marker file (do not modify)
@@ -27,7 +27,7 @@ The executable is registered in `setup.py`:
 ],
 ```
 
-Read it as: *the command `bump_and_go` runs the function `main` in the file `lab02_pkg/bump_and_go.py`*.
+Read it as: *the command `bump_and_go` runs the function `main` in `src/lab02_pkg/lab02_pkg/bump_and_go.py`*.
 
 ### 2. `bump_and_go.py`, section by section
 
@@ -65,7 +65,7 @@ The orientation arrives as a **quaternion**; `euler_from_quaternion` returns `(r
 
 #### Section 3 — `sector_distance(center_deg, half_width_deg)`
 
-Returns the closest obstacle inside an angular sector.
+Returns the closest usable range inside an angular sector, or `None` if no usable ray exists.
 
 ```python
 angle = math.degrees(s.angle_min + i * s.angle_increment)   # angle of ray i
@@ -74,16 +74,17 @@ diff = (angle - center_deg + 180.0) % 360.0 - 180.0        # difference in [-180
 
 - The angle of ray `i` is computed from the message fields, so the code works with any number of rays (230 in simulation, a different number on the real sensor).
 - `diff` handles the wrap-around: a ray at 355° is 5° away from 0°, not 355°.
-- `inf` or values above `range_max` → treated as `range_max` (free). Values below `range_min` → ignored (invalid).
+- Positive `inf` → treated as `range_max` (no obstacle within sensor range). `NaN`, negative `inf`, and values outside the sensor range are ignored. An empty sector makes the controller stop.
 - Angles: 0° = front, +90° = left, −90° (= 270°) = right (counter-clockwise positive).
 
 #### Section 4 — `control_loop` (state machine)
 
 ```
+SENSORS missing, stale or invalid → publish zero velocity
 GO      front > threshold  → drive forward at max_linear_vel
         front ≤ threshold  → choose side, set target_yaw, go to ROTATE
-ROTATE  |error| ≥ 2°       → ω = clip(2·error, ±max_angular_vel)
-        |error| < 2°       → back to GO
+ROTATE  |error| ≥ rotation_tolerance_deg → ω = clip(2·error, ±max_angular_vel)
+        |error| < rotation_tolerance_deg → back to GO
 DONE    (simulation only) near the goal → velocity 0
 ```
 
@@ -120,13 +121,14 @@ Change them without editing the code: `--ros-args -p name:=value`
 | `goal_tolerance` | `0.8` | m | Distance from the goal at which the robot stops |
 | `rotation_tolerance_deg` | `5.0` | deg | A turn is finished when the yaw error is below this |
 | `min_angular_vel` | `0.3` | rad/s | Minimum turning speed: the real motors do not move below it (dead zone) |
+| `sensor_timeout_sec` | `1.0` | s | Stop if LiDAR or odometry has not updated within this time |
 
 Example: `ros2 run lab02_pkg bump_and_go --ros-args -p obstacle_threshold:=0.6`
 
 #### Section 5 — Diagnostics and safe stop
 
 - `status_log` runs every 2 s and prints what the controller sees and sends:
-  `state=GO front=1.85 m  v=0.22 m/s  w=0.00 rad/s  odom=OK`. Before the first LiDAR message it prints `waiting for /scan ...`. Use it to tell apart "the controller does not send forward" from "the controller sends forward but the robot does not move".
+  `state=GO front=1.85 m  v=0.22 m/s  w=0.00 rad/s  odom=OK`. If LiDAR or odometry is missing or stale, the controller sends zero velocity and prints a warning. Use it to tell apart "the controller does not send forward" from "the controller sends forward but the robot does not move".
 - `stop_robot` publishes a zero `Twist` three times. `main` calls it when you press `Ctrl+C`, so the robot does not keep driving with the last command. For this, `rclpy.init(..., signal_handler_options=SignalHandlerOptions.NO)` lets our code handle `Ctrl+C` while ROS is still running.
 
 ### 3. `scripts/plot_bag.py`
@@ -159,8 +161,8 @@ All figures are saved as **PDF** (vector, for the report) and **PNG** (preview),
 ### 1. 包的结构
 
 ```
-lab02_pkg/
-├── package.xml          # 包的信息和依赖（rclpy、geometry_msgs、sensor_msgs、nav_msgs）
+src/lab02_pkg/
+├── package.xml          # 包的信息和依赖（包括 tf_transformations）
 ├── setup.py             # 安装说明，登记可执行程序 "bump_and_go"
 ├── setup.cfg            # ros2 run 需要（不要改）
 ├── resource/lab02_pkg   # 标记文件（不要改）
@@ -177,7 +179,7 @@ lab02_pkg/
 ],
 ```
 
-意思是：*命令 `bump_and_go` 运行 `lab02_pkg/bump_and_go.py` 文件里的 `main` 函数*。
+意思是：*命令 `bump_and_go` 运行 `src/lab02_pkg/lab02_pkg/bump_and_go.py` 文件里的 `main` 函数*。
 
 ### 2. `bump_and_go.py` 逐段讲解
 
@@ -215,7 +217,7 @@ def odom_callback(self, msg):
 
 #### 第 3 段：`sector_distance(中心角, 半宽)`
 
-返回某个扇形区域内最近的障碍物距离。
+返回某个扇形区域内最近的有效测距；没有有效光束时返回 `None`。
 
 ```python
 angle = math.degrees(s.angle_min + i * s.angle_increment)   # 第 i 条光束的角度
@@ -224,15 +226,16 @@ diff = (angle - center_deg + 180.0) % 360.0 - 180.0        # 角度差，范围 
 
 - 每条光束的角度都用消息里的字段现算，所以光束有多少条都能用（仿真 230 条，真雷达数量不同）。
 - `diff` 处理"绕一圈"的问题：355° 和 0° 只差 5°，不是 355°。
-- `inf` 或大于 `range_max` 的值当作 `range_max`（畅通）；小于 `range_min` 的值丢弃（无效）。
+- 正无穷 `inf` 当作 `range_max`（量程内没有障碍）。`NaN`、负无穷以及量程外的值会被丢弃；扇区没有有效数据时控制器停车。
 - 角度方向：0° 正前方，+90° 左边，−90°（= 270°）右边（逆时针为正）。
 
 #### 第 4 段：`control_loop`（状态机）
 
 ```
+传感器缺失、超时或数据无效 → 发布零速度
 GO      前方 > 阈值   → 以 max_linear_vel 前进
         前方 ≤ 阈值   → 选择转向方向，设定 target_yaw，进入 ROTATE
-ROTATE  |误差| ≥ 2°  → ω = 限幅(2·误差, ±max_angular_vel)
+ROTATE  |误差| ≥ rotation_tolerance_deg → ω = 限幅(2·误差, ±max_angular_vel)
         |误差| < rotation_tolerance_deg  → 回到 GO
 DONE    （仅仿真）到达目标附近 → 速度为 0
 ```
@@ -270,13 +273,14 @@ error = math.atan2(math.sin(self.target_yaw - self.yaw),
 | `goal_tolerance` | `0.8` | m | 离目标多近就停车 |
 | `rotation_tolerance_deg` | `5.0` | deg | 偏航角误差小于它就算转完 |
 | `min_angular_vel` | `0.3` | rad/s | 最小转速：真车电机低于这个速度转不动（死区） |
+| `sensor_timeout_sec` | `1.0` | s | 雷达或里程计超过这段时间没有更新就停车 |
 
 例子：`ros2 run lab02_pkg bump_and_go --ros-args -p obstacle_threshold:=0.6`
 
 #### 第 5 段：诊断信息和安全停车
 
 - `status_log` 每 2 秒打印一次控制器看到了什么、发出了什么：
-  `state=GO front=1.85 m  v=0.22 m/s  w=0.00 rad/s  odom=OK`。还没收到雷达数据时打印 `waiting for /scan ...`。用它可以分清"控制器没发前进指令"和"发了前进指令但车没动"。
+  `state=GO front=1.85 m  v=0.22 m/s  w=0.00 rad/s  odom=OK`。雷达或里程计缺失、超时时，控制器发布零速度并打印警告。用它可以分清"控制器没发前进指令"和"发了前进指令但车没动"。
 - `stop_robot` 连发三次零速度。按 `Ctrl+C` 时 `main` 会调用它，车就不会继续执行最后一条指令。为此 `rclpy.init(..., signal_handler_options=SignalHandlerOptions.NO)` 让我们自己的代码来处理 `Ctrl+C`，此时 ROS 还没关闭，停车指令还能发出去。
 
 ### 3. `scripts/plot_bag.py`

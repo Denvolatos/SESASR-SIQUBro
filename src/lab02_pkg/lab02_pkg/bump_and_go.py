@@ -1,4 +1,5 @@
 import math
+import time
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
@@ -22,8 +23,9 @@ class BumpAndGo(Node):
         self.declare_parameter('goal_x', 6.5)               # [m] green cube in the maze
         self.declare_parameter('goal_y', 3.0)
         self.declare_parameter('goal_tolerance', 0.8)       # [m]
-        self.declare_parameter('rotation_tolerance_deg', 5.0)  # [deg] turn is finished below this error
-        self.declare_parameter('min_angular_vel', 0.3)      # [rad/s] real motors do not move below this
+        self.declare_parameter('rotation_tolerance_deg', 5.0)  # [deg] turn tolerance
+        self.declare_parameter('min_angular_vel', 0.3)      # [rad/s] motor dead zone
+        self.declare_parameter('sensor_timeout_sec', 1.0)  # [s] stop if sensors become stale
         self.v_max = self.get_parameter('max_linear_vel').value
         self.w_max = self.get_parameter('max_angular_vel').value
         self.threshold = self.get_parameter('obstacle_threshold').value
@@ -32,7 +34,10 @@ class BumpAndGo(Node):
         self.goal_tol = self.get_parameter('goal_tolerance').value
         self.rot_tol = math.radians(self.get_parameter('rotation_tolerance_deg').value)
         self.w_min = self.get_parameter('min_angular_vel').value
+        self.sensor_timeout = self.get_parameter('sensor_timeout_sec').value
         period = 1.0 / self.get_parameter('control_frequency').value
+        if self.sensor_timeout <= 0:
+            raise ValueError('sensor_timeout_sec must be positive')
 
         self.create_subscription(LaserScan, '/scan', self.scan_callback, qos_profile_sensor_data)
         self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
@@ -42,6 +47,8 @@ class BumpAndGo(Node):
 
         self.scan = None
         self.got_odom = False
+        self.last_scan_time = None
+        self.last_odom_time = None
         self.last_cmd = Twist()
         self.x = self.y = self.yaw = 0.0
         self.state = 'GO'          # 'GO', 'ROTATE' or 'DONE'
@@ -50,34 +57,59 @@ class BumpAndGo(Node):
     # ---------- 2. Sensors: remember the latest data ----------
     def scan_callback(self, msg):
         self.scan = msg
+        self.last_scan_time = time.monotonic()
 
     def odom_callback(self, msg):
-        self.got_odom = True
-        self.x = msg.pose.pose.position.x
-        self.y = msg.pose.pose.position.y
+        x = msg.pose.pose.position.x
+        y = msg.pose.pose.position.y
         q = msg.pose.pose.orientation
-        _, _, self.yaw = tf_transformations.euler_from_quaternion([q.x, q.y, q.z, q.w])
+        _, _, yaw = tf_transformations.euler_from_quaternion([q.x, q.y, q.z, q.w])
+        if not all(math.isfinite(value) for value in (x, y, yaw)):
+            return
+        self.got_odom = True
+        self.x, self.y, self.yaw = x, y, yaw
+        self.last_odom_time = time.monotonic()
+
+    def sensors_ready(self):
+        """Require recent LiDAR and odometry before commanding movement."""
+        now = time.monotonic()
+        return (self.scan is not None
+                and self.got_odom
+                and self.last_scan_time is not None
+                and self.last_odom_time is not None
+                and now - self.last_scan_time <= self.sensor_timeout
+                and now - self.last_odom_time <= self.sensor_timeout)
 
     # ---------- 3. LiDAR: closest obstacle in a direction ----------
     def sector_distance(self, center_deg, half_width_deg):
-        """Smallest valid range within +-half_width_deg of center_deg (0 = front, +90 = left)."""
+        """Return the nearest usable range, or None when this sector has no data."""
         s = self.scan
         values = []
+        if not math.isfinite(s.range_max) or s.range_max <= s.range_min:
+            return None
         for i, r in enumerate(s.ranges):
             angle = math.degrees(s.angle_min + i * s.angle_increment)
             diff = (angle - center_deg + 180.0) % 360.0 - 180.0   # angle difference in [-180, 180)
             if abs(diff) <= half_width_deg:
-                if math.isinf(r) or r > s.range_max:
-                    values.append(s.range_max)                      # nothing seen -> free
-                elif r >= s.range_min:
-                    values.append(r)                                # valid measurement
-        return min(values) if values else s.range_max
+                if math.isinf(r) and r > 0:
+                    values.append(s.range_max)  # no return within the sensor's range
+                elif math.isfinite(r) and s.range_min <= r <= s.range_max:
+                    values.append(r)
+        return min(values) if values else None
 
     # ---------- 4. Control loop: decide and publish ----------
     def control_loop(self):
-        if self.scan is None:
-            return
         cmd = Twist()
+        if not self.sensors_ready():
+            self.cmd_pub.publish(cmd)
+            self.last_cmd = cmd
+            return
+
+        front = self.sector_distance(0.0, 15.0)
+        if front is None:
+            self.cmd_pub.publish(cmd)
+            self.last_cmd = cmd
+            return
 
         if (self.stop_at_goal and self.state != 'DONE'
                 and math.hypot(self.x - self.goal[0], self.y - self.goal[1]) < self.goal_tol):
@@ -85,12 +117,15 @@ class BumpAndGo(Node):
             self.get_logger().info(f'goal reached at x={self.x:.2f} y={self.y:.2f}')
 
         if self.state == 'GO':
-            front = self.sector_distance(0.0, 15.0)
             if front > self.threshold:
                 cmd.linear.x = self.v_max                       # Go
             else:                                               # Bump
                 left = self.sector_distance(90.0, 30.0)
                 right = self.sector_distance(-90.0, 30.0)
+                if left is None or right is None:
+                    self.cmd_pub.publish(cmd)
+                    self.last_cmd = cmd
+                    return
                 turn = math.pi / 2 if left > right else -math.pi / 2
                 # snap to the maze axes (0, 90, 180, 270 deg)
                 self.target_yaw = round((self.yaw + turn) / (math.pi / 2)) * (math.pi / 2)
@@ -116,10 +151,13 @@ class BumpAndGo(Node):
     # ---------- 5. Diagnostics and safe stop ----------
     def status_log(self):
         """Print what the controller sees and sends, to debug the real robot."""
-        if self.scan is None:
-            self.get_logger().warn('waiting for /scan ... (no LiDAR data received yet)')
+        if not self.sensors_ready():
+            self.get_logger().warn('waiting for fresh /scan and /odom; commanding zero velocity')
             return
         front = self.sector_distance(0.0, 15.0)
+        if front is None:
+            self.get_logger().warn('no usable front LiDAR data; commanding zero velocity')
+            return
         self.get_logger().info(
             f'state={self.state} front={front:.2f} m  '
             f'v={self.last_cmd.linear.x:.2f} m/s  w={self.last_cmd.angular.z:.2f} rad/s  '
