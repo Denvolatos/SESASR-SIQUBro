@@ -56,11 +56,12 @@ def test_small_command_is_raised_to_the_dead_zone():
 
 def test_snap_to_axes():
     c = make()
-    c.step(0, 0, math.radians(40), front=0.4, left=2.0, right=0.5)
-    assert c.target_yaw == pytest.approx(math.pi)            # 130 deg -> 180 deg
+    # placed 50 deg off the axes: 50 + 90 = 140 deg is snapped to 180 deg, a 130 deg turn
+    c.step(0, 0, math.radians(50), front=0.4, left=2.0, right=0.5)
+    assert c.target_yaw == pytest.approx(math.pi)
     c = make(snap_to_axes=False)
-    c.step(0, 0, math.radians(40), front=0.4, left=2.0, right=0.5)
-    assert c.target_yaw == pytest.approx(math.radians(130))
+    c.step(0, 0, math.radians(50), front=0.4, left=2.0, right=0.5)
+    assert c.target_yaw == pytest.approx(math.radians(140))
 
 
 def test_turn_until_clear_stops_early():

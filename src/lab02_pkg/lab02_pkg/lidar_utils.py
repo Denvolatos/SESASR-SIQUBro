@@ -4,7 +4,8 @@ import math
 
 
 def sector_ranges(scan, center_deg, half_width_deg):
-    """Usable ranges within +-half_width_deg of center_deg (0 = front, +90 = left).
+    """
+    Usable ranges within +-half_width_deg of center_deg (0 = front, +90 = left).
 
     +inf means "no return within the sensor's range" and counts as range_max.
     NaN, -inf and values outside [range_min, range_max] are ignored
@@ -31,7 +32,8 @@ def sector_min(scan, center_deg, half_width_deg):
 
 
 def sector_median(scan, center_deg, half_width_deg):
-    """How open the sector is (median range), or None when the sector has no usable ray.
+    """
+    How open the sector is (median range), or None when the sector has no usable ray.
 
     Used to choose the turn side: one close corner does not hide a long free corridor.
     """

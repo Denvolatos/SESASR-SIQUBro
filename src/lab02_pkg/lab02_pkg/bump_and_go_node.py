@@ -1,4 +1,5 @@
-"""ROS 2 node: reads /scan and /odom, runs the Bump&Go controller, publishes /cmd_vel.
+"""
+ROS 2 node: reads /scan and /odom, runs the Bump&Go controller, publishes /cmd_vel.
 
 All decisions are in controller.py and all LiDAR processing in lidar_utils.py;
 this file only connects them to ROS (parameters, topics, timers, safe stop).

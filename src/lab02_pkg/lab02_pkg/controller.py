@@ -1,4 +1,5 @@
-"""Bump&Go state machine. Pure Python: no ROS, so it can be unit-tested directly.
+"""
+Bump&Go state machine. Pure Python: no ROS, so it can be unit-tested directly.
 
 GO      front > threshold        -> drive straight
         front <= threshold       -> choose the more open side, go to ROTATE
@@ -41,7 +42,8 @@ class BumpAndGoController:
         self.event = None      # one-line description of the last decision, for the log
 
     def step(self, x, y, yaw, front, left, right):
-        """One control step. front/left/right in metres (None = no data).
+        """
+        One control step. front/left/right in metres (None = no data).
 
         Returns (linear velocity, angular velocity).
         """

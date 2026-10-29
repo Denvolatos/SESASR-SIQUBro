@@ -1,4 +1,5 @@
-"""Start the Bump&Go node with the parameters for the simulation or the real robot.
+"""
+Start the Bump&Go node with the parameters for the simulation or the real robot.
 
 ros2 launch lab02_pkg bump_and_go.launch.py              # simulation (config/sim.yaml)
 ros2 launch lab02_pkg bump_and_go.launch.py robot:=real  # real robot (config/real_robot.yaml)
