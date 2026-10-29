@@ -152,11 +152,19 @@ class BumpAndGo(Node):
     def status_log(self):
         """Print what the controller sees and sends, to debug the real robot."""
         if not self.sensors_ready():
-            self.get_logger().warn('waiting for fresh /scan and /odom; commanding zero velocity')
+            now = time.monotonic()
+            ages = []
+            for name, t in (('/scan', self.last_scan_time), ('/odom', self.last_odom_time)):
+                ages.append(f'{name}=never' if t is None else f'{name}={now - t:.1f}s ago')
+            self.get_logger().warn(
+                f'sensor data missing or stale ({", ".join(ages)}); commanding zero velocity')
             return
         front = self.sector_distance(0.0, 15.0)
         if front is None:
-            self.get_logger().warn('no usable front LiDAR data; commanding zero velocity')
+            zeros = sum(1 for r in self.scan.ranges if r == 0.0)
+            self.get_logger().warn(
+                f'no usable front LiDAR data ({zeros}/{len(self.scan.ranges)} rays are 0.0); '
+                'commanding zero velocity')
             return
         self.get_logger().info(
             f'state={self.state} front={front:.2f} m  '
