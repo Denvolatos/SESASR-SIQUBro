@@ -81,8 +81,8 @@ class BumpAndGo(Node):
                 and now - self.last_odom_time <= self.sensor_timeout)
 
     # ---------- 3. LiDAR: closest obstacle in a direction ----------
-    def sector_distance(self, center_deg, half_width_deg):
-        """Return the nearest usable range, or None when this sector has no data."""
+    def sector_distance(self, center_deg, half_width_deg, use_median=False):
+        """Return the nearest (or median) usable range, or None when this sector has no data."""
         s = self.scan
         values = []
         if not math.isfinite(s.range_max) or s.range_max <= s.range_min:
@@ -95,7 +95,11 @@ class BumpAndGo(Node):
                     values.append(s.range_max)  # no return within the sensor's range
                 elif math.isfinite(r) and s.range_min <= r <= s.range_max:
                     values.append(r)
-        return min(values) if values else None
+        if not values:
+            return None
+        if use_median:                       # how open the side is, not its closest corner
+            return sorted(values)[len(values) // 2]
+        return min(values)
 
     # ---------- 4. Control loop: decide and publish ----------
     def control_loop(self):
@@ -120,8 +124,8 @@ class BumpAndGo(Node):
             if front > self.threshold:
                 cmd.linear.x = self.v_max                       # Go
             else:                                               # Bump
-                left = self.sector_distance(90.0, 30.0)
-                right = self.sector_distance(-90.0, 30.0)
+                left = self.sector_distance(90.0, 30.0, use_median=True)
+                right = self.sector_distance(-90.0, 30.0, use_median=True)
                 if left is None or right is None:
                     self.cmd_pub.publish(cmd)
                     self.last_cmd = cmd

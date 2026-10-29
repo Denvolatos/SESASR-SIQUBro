@@ -63,7 +63,7 @@ def test_missing_side_ranges_prevent_turn():
     publisher = Publisher()
     node = SimpleNamespace(
         sensors_ready=lambda: True,
-        sector_distance=lambda center, width: 0.4 if center == 0.0 else None,
+        sector_distance=lambda center, width, **kw: 0.4 if center == 0.0 else None,
         cmd_pub=publisher, last_cmd=Twist(), stop_at_goal=False,
         state='GO', threshold=0.5,
     )
