@@ -6,6 +6,7 @@
 LOG=~/group_203/logs; mkdir -p $LOG
 if [ "$1" = dds ]; then
   export RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_LOCALHOST_ONLY=1
+  ros2 daemon stop > /dev/null 2>&1
 fi
 
 stop_all() {
