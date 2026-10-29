@@ -2,17 +2,22 @@
 
 import math
 
+# The real LDS-02 reports range_min = 0.0, so a 0.0 reading would look like a wall at 0 m.
+# Nothing can be closer than the robot body, so shorter readings are treated as invalid.
+MIN_VALID_RANGE = 0.05   # [m]
+
 
 def sector_ranges(scan, center_deg, half_width_deg):
     """
     Usable ranges within +-half_width_deg of center_deg (0 = front, +90 = left).
 
     +inf means "no return within the sensor's range" and counts as range_max.
-    NaN, -inf and values outside [range_min, range_max] are ignored
+    NaN, -inf and values outside [max(range_min, MIN_VALID_RANGE), range_max] are ignored
     (the real LDS-02 reports NaN where the beam hits nothing).
     """
     if not math.isfinite(scan.range_max) or scan.range_max <= scan.range_min:
         return []
+    lowest = max(scan.range_min, MIN_VALID_RANGE)
     values = []
     for i, r in enumerate(scan.ranges):
         angle = math.degrees(scan.angle_min + i * scan.angle_increment)
@@ -20,7 +25,7 @@ def sector_ranges(scan, center_deg, half_width_deg):
         if abs(diff) <= half_width_deg:
             if math.isinf(r) and r > 0:
                 values.append(scan.range_max)
-            elif math.isfinite(r) and scan.range_min <= r <= scan.range_max:
+            elif math.isfinite(r) and lowest <= r <= scan.range_max:
                 values.append(r)
     return values
 

@@ -40,5 +40,11 @@ def test_sector_wraps_around_zero_degrees():
     assert sector_min(scan, 0.0, 15.0) == pytest.approx(0.2)
 
 
+def test_zero_reading_is_not_a_wall_even_if_range_min_is_zero():
+    scan = make_scan([0.0, 0.8, 0.02])
+    scan.range_min = 0.0          # as reported by the real LDS-02
+    assert sector_min(scan, 0.0, 15.0) == pytest.approx(0.8)
+
+
 def test_count_zero_rays():
     assert count_zero_rays(make_scan([0.0, 1.0, 0.0])) == 2
