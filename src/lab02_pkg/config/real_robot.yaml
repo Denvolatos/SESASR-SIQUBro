@@ -15,5 +15,6 @@ bump_and_go:
     snap_to_axes: false         # odometry axes depend on how the robot was placed
     turn_until_clear: true      # stop turning as soon as the front is free
     clear_margin: 0.3           # [m] free = obstacle_threshold + clear_margin
+    side_metric: median            # median: one close corner does not hide a corridor
     control_frequency: 10.0     # [Hz]
     sensor_timeout_sec: 1.0     # [s]

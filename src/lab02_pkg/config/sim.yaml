@@ -14,5 +14,6 @@ bump_and_go:
     snap_to_axes: true          # maze walls are aligned with the odometry axes
     turn_until_clear: false
     clear_margin: 0.3
+    side_metric: min               # closest point: reached the goal in simulation
     control_frequency: 10.0     # [Hz]
     sensor_timeout_sec: 1.0     # [s]

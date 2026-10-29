@@ -235,7 +235,7 @@ Conclusion: the controller logic is correct; "not moving at start" on the real r
 | Finding | Evidence | Fix |
 |---|---|---|
 | **At 0.22 m/s the robot only turns, it never drives forward** (also the "only turns" of 22/10) | Controller sends `v=0.22` for 15 s, front distance unchanged; 0.1 and 0.15 m/s drive normally | `max_linear_vel: 0.15` |
-| Choosing the side by the closest point picks the wrong way (one corner hides a corridor) → the robot went back the way it came | Turn log of `lab04_real_3` | Median of the side sector |
+| Choosing the side by the closest point picks the wrong way (one corner hides a corridor) → the robot went back the way it came | Turn log of `lab04_real_3` | Median of the side sector (real robot only; `side_metric`) |
 | Turns snapped to 90° multiples are too large: the odometry axes depend on how the robot was placed | — | `snap_to_axes: false`, `turn_until_clear: true`, `turn_angle_deg: 45` |
 | The LDS-02 reports **NaN** for no return and `range_min = 0.0` | `ros2 topic echo /scan --once` | NaN ignored, readings below 5 cm ignored |
 | Lifted, a turn never finishes | Driver uses `use_imu: true` | Test turning on the floor only |
@@ -484,7 +484,7 @@ git push
 | 发现 | 证据 | 解决 |
 |---|---|---|
 | **速度 0.22 m/s 时车只转不走**（10/22 的"只转不走"也是这个原因） | 控制器发 `v=0.22` 发了 15 秒，前方距离不变；0.1 和 0.15 m/s 都能正常前进 | `max_linear_vel: 0.15` |
-| 用最近点选左右会选错（一个墙角挡住整条通道），车走回头路 | `lab04_real_3` 的转弯记录 | 左右改用扇区中位数 |
+| 用最近点选左右会选错（一个墙角挡住整条通道），车走回头路 | `lab04_real_3` 的转弯记录 | 左右改用扇区中位数（只用于真车；`side_metric`） |
 | 转向角对齐 90° 倍数转得太多：里程计坐标轴取决于开机时车怎么放 | — | `snap_to_axes: false`、`turn_until_clear: true`、`turn_angle_deg: 45` |
 | LDS-02 打空返回 **NaN**，且 `range_min = 0.0` | `ros2 topic echo /scan --once` | 丢弃 NaN 和小于 5 cm 的读数 |
 | 车架空时转弯永远转不完 | 驱动设置 `use_imu: true` | 只在地上测转弯 |

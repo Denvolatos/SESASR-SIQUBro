@@ -40,6 +40,14 @@ class BumpAndGoNode(Node):
 
         self.declare_parameter('control_frequency', 10.0)   # [Hz]
         self.declare_parameter('sensor_timeout_sec', 1.0)   # [s] stop if sensors become stale
+        # how open a side is: 'min' (closest point) or 'median'. The simulated LiDAR returns inf
+        # for no return, so in open areas the median is often range_max on both sides (a tie).
+        # The real LDS-02 returns NaN instead, which is ignored, so the median works there.
+        self.declare_parameter('side_metric', 'min')
+        metric = self.get_parameter('side_metric').value
+        if metric not in ('min', 'median'):
+            raise ValueError("side_metric must be 'min' or 'median'")
+        self.side_distance = sector_median if metric == 'median' else sector_min
         self.sensor_timeout = self.get_parameter('sensor_timeout_sec').value
         if self.sensor_timeout <= 0:
             raise ValueError('sensor_timeout_sec must be positive')
@@ -91,8 +99,8 @@ class BumpAndGoNode(Node):
             v, w = self.controller.step(
                 self.x, self.y, self.yaw,
                 front=sector_min(self.scan, *FRONT),
-                left=sector_median(self.scan, *LEFT),
-                right=sector_median(self.scan, *RIGHT))
+                left=self.side_distance(self.scan, *LEFT),
+                right=self.side_distance(self.scan, *RIGHT))
             cmd.linear.x, cmd.angular.z = v, w
             if self.controller.event:
                 self.get_logger().info(self.controller.event)

@@ -34,7 +34,7 @@ How the pieces talk to each other at every control step (10 Hz):
 
 ```
 /scan ─► lidar_utils: front = sector_min(0°±15°)
-                      left  = sector_median(+90°±30°), right = sector_median(−90°±30°)
+                      left / right = side_metric(±90°±30°)  (min in sim, median on the real robot)
 /odom ─► x, y, yaw                                     │
                                                        ▼
           controller.step(x, y, yaw, front, left, right) ─► (v, ω) ─► /cmd_vel
@@ -62,7 +62,7 @@ diff = (angle - center_deg + 180.0) % 360.0 - 180.0              # difference in
 - Positive `inf` = no return within range → counted as `range_max` (free).
 - `NaN`, `−inf`, readings below 5 cm and above `range_max` are ignored. The real LDS-02 reports **NaN** where the beam hits nothing and declares `range_min = 0.0`, so without the 5 cm limit a 0.0 reading would look like a wall at 0 m.
 - `sector_min` (front): the **closest** point, for safety.
-- `sector_median` (sides): the **median**, to judge how open a side is. With the minimum, one close corner hides a long free corridor and the robot turns the wrong way.
+- Sides: `side_metric` chooses `sector_min` or `sector_median`. On the real robot the **median** works better: with the minimum, one close corner hides a long free corridor and the robot turns the wrong way. In simulation the **minimum** is kept: the simulated LiDAR returns `inf` (= 3.5 m) for no return, so in open areas the median is 3.5 m on both sides and cannot tell them apart.
 - An empty sector returns `None` and the controller stops.
 
 ### 3. `controller.py` — state machine
@@ -129,6 +129,7 @@ Set in `config/sim.yaml` and `config/real_robot.yaml` (after editing: `colcon bu
 | `snap_to_axes` | true | **false** | – | Round the turn to the maze axes |
 | `turn_until_clear` | false | **true** | – | Stop turning as soon as the front is free |
 | `clear_margin` | 0.3 | 0.3 | m | Front is free above `obstacle_threshold + clear_margin` |
+| `side_metric` | min | **median** | – | How to measure how open each side is |
 | `control_frequency` | 10 | 10 | Hz | Control loop |
 | `sensor_timeout_sec` | 1.0 | 1.0 | s | Stop if LiDAR or odometry is older than this |
 
@@ -159,7 +160,7 @@ All figures are saved as **PDF** (vector, for the report) and **PNG** (preview),
 3. Why is the target yaw rounded to multiples of 90° in simulation but not on the real robot?
 4. What does `atan2(sin(e), cos(e))` do, and why is it needed?
 5. Why is a minimum angular velocity needed on the real robot?
-6. Why the minimum for the front sector but the median for the sides?
+6. Why the minimum for the front sector, but the median for the sides on the real robot? Why not in simulation?
 7. Why are `inf` treated as free space and `NaN` ignored?
 8. Why do odometry and ground truth diverge over time? Why is the error larger on the real robot?
 9. Why is the algorithm in a separate module without ROS?
@@ -197,7 +198,7 @@ src/lab02_pkg/
 
 ```
 /scan ─► lidar_utils：front = sector_min(0°±15°)
-                      left  = sector_median(+90°±30°)，right = sector_median(−90°±30°)
+                      left / right = side_metric(±90°±30°)（仿真取最近点，真车取中位数）
 /odom ─► x, y, yaw                                     │
                                                        ▼
           controller.step(x, y, yaw, front, left, right) ─► (v, ω) ─► /cmd_vel
@@ -225,7 +226,7 @@ diff = (angle - center_deg + 180.0) % 360.0 - 180.0              # 角度差，�
 - 正无穷 `inf` = 量程内没打到东西 → 当作 `range_max`（畅通）。
 - `NaN`、负无穷、小于 5 cm 和大于 `range_max` 的读数都丢弃。真车 LDS-02 打空时返回的是 **NaN**，而且报的 `range_min = 0.0`；不设 5 cm 下限的话，读数 0.0 会被当成 0 米处有墙。
 - `sector_min`（前方）：取**最近点**，为了安全。
-- `sector_median`（左右）：取**中位数**，判断哪边更空。用最近点的话，一个近处的墙角就会把后面一整条长通道"挡住"，车会转错方向。
+- 左右：用 `side_metric` 选 `sector_min` 或 `sector_median`。真车上**中位数**更好：用最近点的话，一个近处的墙角就会把后面一整条长通道"挡住"，车会转错方向。仿真里保留**最近点**：仿真雷达打空返回 `inf`（按 3.5 m 算），空旷处两边的中位数都是 3.5 m，分不出哪边更空。
 - 扇区没有有效数据时返回 `None`，控制器停车。
 
 ### 3. `controller.py`：状态机
@@ -292,6 +293,7 @@ if abs(w) < c.min_angular_vel:                                     # 电机死�
 | `snap_to_axes` | true | **false** | – | 转向角对齐迷宫坐标轴 |
 | `turn_until_clear` | false | **true** | – | 前方一空出来就停止转向 |
 | `clear_margin` | 0.3 | 0.3 | m | 前方 > `obstacle_threshold + clear_margin` 算空 |
+| `side_metric` | min | **median** | – | 用什么衡量左右哪边更空 |
 | `control_frequency` | 10 | 10 | Hz | 控制频率 |
 | `sensor_timeout_sec` | 1.0 | 1.0 | s | 雷达或里程计超过这个时间没更新就停车 |
 
@@ -322,7 +324,7 @@ colcon build --symlink-install && colcon test --packages-select lab02_pkg && col
 3. 为什么仿真里目标角度要取整到 90° 的倍数，真车上却不取整？
 4. `atan2(sin(e), cos(e))` 做了什么？为什么需要它？
 5. 为什么真车需要最小转速？
-6. 为什么前方用最近点，左右用中位数？
+6. 为什么前方用最近点，真车的左右却用中位数？仿真里为什么不用？
 7. 为什么 `inf` 当作畅通，`NaN` 却丢弃？
 8. 为什么里程计和真实位置会越差越多？为什么真车上误差更大？
 9. 为什么要把算法单独放在一个不依赖 ROS 的模块里？
