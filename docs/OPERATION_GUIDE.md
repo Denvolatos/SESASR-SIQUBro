@@ -112,7 +112,7 @@ ros2 launch turtlebot3_ignition lab02.launch.py
 
 ```bash
 source ~/SESASR-SIQUBro/install/setup.bash
-ros2 run lab02_pkg bump_and_go
+ros2 launch lab02_pkg bump_and_go.launch.py
 ```
 
 ✅ The robot drives forward; at each wall the terminal prints a line like
@@ -154,12 +154,12 @@ python3 ~/SESASR-SIQUBro/scripts/plot_bag.py lab02_sim
 |---|---|---|---|
 | 1 | Your PC | Connect to Wi-Fi `SESASR_WiFi` (password in the Lab03 document) | Internet icon connected |
 | 2 | Your PC terminal | `ssh students@192.168.10.1XX` (password in the Lab03 document); answer `yes` the first time | Prompt becomes `students@nucXX` |
-| 3 | Robot (SSH) | `nano ~/.bashrc`: check `ROS_DOMAIN_ID=XX` (no leading 0), `RMW_IMPLEMENTATION=rmw_zenoh_cpp`, comment other groups' workspaces with `#`. Save: `Ctrl+O`, `Enter`, `Ctrl+X`. Then `source ~/.bashrc` | — |
+| 3 | Robot (SSH) | `nano ~/.bashrc`: check `ROS_DOMAIN_ID=XX` (no leading 0), `RMW_IMPLEMENTATION=rmw_zenoh_cpp`, comment other groups' workspaces with `#`. Save: `Ctrl+O`, `Enter`, `Ctrl+X`. Then `source ~/.bashrc`. If another group's workspace stays in `.bashrc` (it may also contain a `lab02_pkg`), run `source ~/group_NNN/install/setup.bash` in every new terminal | — |
 | 4 | Robot (SSH) | `ros2 run rmw_zenoh_cpp rmw_zenohd` (keep it running; only one!) | No error |
 | 5 | Robot (new SSH) | `ros2 launch turtlebot3_bringup robot.launch.py` | Log shows `LDS-02 started successfully` and `Run!` |
 | 6 | Robot (new SSH) | `mkdir -p ~/group_NNN/src && cd ~/group_NNN/src && git clone https://github.com/Denvolatos/SESASR-SIQUBro.git && cd .. && colcon build --symlink-install && source install/setup.bash` | `1 package finished` |
-| 7 | Desk | **Robot lifted, wheels in the air.** Power on; then in step 6's terminal: `ros2 run lab02_pkg bump_and_go --ros-args -p stop_at_goal:=false` | Wheels turn; `Ctrl+C` to stop |
-| 8 | Test field | Put the robot down, start recording in another SSH: `ros2 bag record -o lab03_real /odom /cmd_vel /scan`, then run the controller again | Robot avoids walls |
+| 7 | Desk | **Robot lifted, wheels in the air.** Power on; then in step 6's terminal: `ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1}}"` | Wheels turn; `Ctrl+C` to stop. (Do not test the controller lifted: the yaw comes from the IMU, so a turn never finishes.) |
+| 8 | Test field | Put the robot down, start recording in another SSH: `ros2 bag record -o lab04_real /odom /cmd_vel /scan /imu`, then in step 6's terminal: `ros2 launch lab02_pkg bump_and_go.launch.py robot:=real` | Robot avoids walls |
 | 9 | After the run | `Ctrl+C` the recorder, copy the bag to your PC (see below) | `ros2 bag info lab03_real` works |
 
 If the robot PC has no internet (git clone fails), copy the code from your PC instead:
@@ -176,7 +176,7 @@ scp -r students@192.168.10.1XX:~/group_NNN/bags/lab03_real ~/SESASR-SIQUBro/bags
 
 (Adjust the path to where you started `ros2 bag record`.)
 
-⚠️ Safety: stay next to the robot. `Ctrl+C` stops the program, but the robot may keep its last command — lift it if needed. If it gets too close to walls, add `-p obstacle_threshold:=0.6`.
+⚠️ Safety: stay next to the robot. `Ctrl+C` stops the program, but the robot may keep its last command — lift it if needed. Emergency stop from any terminal: `pkill -f "lib/lab02_pkg/bump_and_go"; ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{}"`. To change speed, turn angle or threshold, edit `src/lab02_pkg/config/real_robot.yaml` and run `colcon build` again.
 
 ### Part 7 — Optional: see the robot's laser in RViz on your PC
 
@@ -230,11 +230,22 @@ What we learned on 22/10 (robot 3) and in simulation tests:
 
 Conclusion: the controller logic is correct; "not moving at start" on the real robot was most likely a communication problem (the Zenoh router stopped several times; nodes started before a router restart cannot reach the robot).
 
+**Lab04 results (29/10, robot 3)** — these are now the defaults in `config/real_robot.yaml`:
+
+| Finding | Evidence | Fix |
+|---|---|---|
+| **At 0.22 m/s the robot only turns, it never drives forward** (also the "only turns" of 22/10) | Controller sends `v=0.22` for 15 s, front distance unchanged; 0.1 and 0.15 m/s drive normally | `max_linear_vel: 0.15` |
+| Choosing the side by the closest point picks the wrong way (one corner hides a corridor) → the robot went back the way it came | Turn log of `lab04_real_3` | Median of the side sector |
+| Turns snapped to 90° multiples are too large: the odometry axes depend on how the robot was placed | — | `snap_to_axes: false`, `turn_until_clear: true`, `turn_angle_deg: 45` |
+| The LDS-02 reports **NaN** for no return and `range_min = 0.0` | `ros2 topic echo /scan --once` | NaN ignored, readings below 5 cm ignored |
+| Lifted, a turn never finishes | Driver uses `use_imu: true` | Test turning on the floor only |
+| The robot PC reboots when the power cable is pulled | `uptime` | Use the battery before moving the robot; restart router and bringup |
+
 **Lab04 checklist**
 
 1. Start in this order, each in its own terminal, and never close them: **router → bringup → (rosbag) → controller**. If the router is restarted, restart bringup and the controller too.
 2. Check the router is listening: `ss -ltn | grep 7447`
-3. Test the motors alone (robot lifted): `ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.22}}"`
+3. Test the motors alone (robot lifted): `ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1}}"` (not 0.22, see below)
 4. Run the controller and read its status line every 2 s (`state=... v=... odom=...`).
 5. In another terminal: `ros2 topic info /cmd_vel` → `Publisher count: 1`, `Subscription count: 1`.
 6. If bringup prints `There is no status packet` / `stack smashing detected`: power the motor board off for 10 s, on again (wait for the music), restart bringup.
@@ -350,7 +361,7 @@ ros2 launch turtlebot3_ignition lab02.launch.py
 
 ```bash
 source ~/SESASR-SIQUBro/install/setup.bash
-ros2 run lab02_pkg bump_and_go
+ros2 launch lab02_pkg bump_and_go.launch.py
 ```
 
 ✅ 小车开始往前走，每遇到一面墙，终端打印一行，比如
@@ -392,12 +403,12 @@ python3 ~/SESASR-SIQUBro/scripts/plot_bag.py lab02_sim
 |---|---|---|---|
 | 1 | 自己电脑 | 连 WiFi `SESASR_WiFi`（密码见 Lab03 文档） | 网络已连接 |
 | 2 | 自己电脑的终端 | `ssh students@192.168.10.1XX`（密码见 Lab03 文档），第一次连接时回答 `yes` | 提示符变成 `students@nucXX` |
-| 3 | 机器人（SSH） | `nano ~/.bashrc`：检查 `ROS_DOMAIN_ID=XX`（前面不带 0）、`RMW_IMPLEMENTATION=rmw_zenoh_cpp`，其他组的工作区那几行前面加 `#` 注释掉。保存：`Ctrl+O`、回车、`Ctrl+X`。然后 `source ~/.bashrc` | — |
+| 3 | 机器人（SSH） | `nano ~/.bashrc`：检查 `ROS_DOMAIN_ID=XX`（前面不带 0）、`RMW_IMPLEMENTATION=rmw_zenoh_cpp`，其他组的工作区那几行前面加 `#` 注释掉。保存：`Ctrl+O`、回车、`Ctrl+X`。然后 `source ~/.bashrc`。如果 `.bashrc` 里还留着别的组的工作区（里面可能也有 `lab02_pkg`），每个新终端都先运行 `source ~/group_NNN/install/setup.bash` | — |
 | 4 | 机器人（SSH） | `ros2 run rmw_zenoh_cpp rmw_zenohd`（保持运行，只开一个！） | 没有报错 |
 | 5 | 机器人（新开 SSH） | `ros2 launch turtlebot3_bringup robot.launch.py` | 日志里有 `LDS-02 started successfully` 和 `Run!` |
 | 6 | 机器人（新开 SSH） | `mkdir -p ~/group_NNN/src && cd ~/group_NNN/src && git clone https://github.com/Denvolatos/SESASR-SIQUBro.git && cd .. && colcon build --symlink-install && source install/setup.bash` | `1 package finished` |
-| 7 | 桌上 | **把车架空，轮子离开桌面**。打开电源，在第 6 步的终端里运行：`ros2 run lab02_pkg bump_and_go --ros-args -p stop_at_goal:=false` | 轮子会转；`Ctrl+C` 停止 |
-| 8 | 场地上 | 把车放到地上，另开一个 SSH 开始录：`ros2 bag record -o lab03_real /odom /cmd_vel /scan`，再运行一次控制器 | 车能自己绕开墙 |
+| 7 | 桌上 | **把车架空，轮子离开桌面**。打开电源，在第 6 步的终端里运行：`ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1}}"` | 轮子会转；`Ctrl+C` 停止。（不要架空测控制器：朝向来自 IMU，车身不转，转弯永远转不完。） |
+| 8 | 场地上 | 把车放到地上，另开一个 SSH 开始录：`ros2 bag record -o lab04_real /odom /cmd_vel /scan /imu`，再在第 6 步的终端里运行：`ros2 launch lab02_pkg bump_and_go.launch.py robot:=real` | 车能自己绕开墙 |
 | 9 | 跑完之后 | 录制终端按 `Ctrl+C`，把录像拷回自己电脑（见下面） | `ros2 bag info lab03_real` 正常 |
 
 如果机器人电脑上不了网（git clone 失败），就从自己电脑把代码拷过去：
@@ -414,7 +425,7 @@ scp -r students@192.168.10.1XX:~/group_NNN/bags/lab03_real ~/SESASR-SIQUBro/bags
 
 （路径改成你运行 `ros2 bag record` 时所在的文件夹。）
 
-⚠️ 安全：人要站在车旁边。`Ctrl+C` 会停掉程序，但车可能还会按最后一条指令继续动，必要时直接把车拿起来。车离墙太近才转弯的话，加 `-p obstacle_threshold:=0.6`。
+⚠️ 安全：人要站在车旁边。`Ctrl+C` 会停掉程序，但车可能还会按最后一条指令继续动，必要时直接把车拿起来。任何终端都能急停：`pkill -f "lib/lab02_pkg/bump_and_go"; ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{}"`。要改速度、转弯角度或阈值，就改 `src/lab02_pkg/config/real_robot.yaml`，然后重新 `colcon build`。
 
 ### 第 7 部分（可选）：在自己电脑上用 RViz 看真车的激光
 
@@ -468,11 +479,22 @@ git push
 
 结论：控制器逻辑没问题；真车"一开始不动"最可能是通信问题（当天 zenoh 路由停过好几次，路由重启前启动的节点连不上车）。
 
+**Lab04 结果（10/29，3 号机器人）**，现在都已经是 `config/real_robot.yaml` 的默认值：
+
+| 发现 | 证据 | 解决 |
+|---|---|---|
+| **速度 0.22 m/s 时车只转不走**（10/22 的"只转不走"也是这个原因） | 控制器发 `v=0.22` 发了 15 秒，前方距离不变；0.1 和 0.15 m/s 都能正常前进 | `max_linear_vel: 0.15` |
+| 用最近点选左右会选错（一个墙角挡住整条通道），车走回头路 | `lab04_real_3` 的转弯记录 | 左右改用扇区中位数 |
+| 转向角对齐 90° 倍数转得太多：里程计坐标轴取决于开机时车怎么放 | — | `snap_to_axes: false`、`turn_until_clear: true`、`turn_angle_deg: 45` |
+| LDS-02 打空返回 **NaN**，且 `range_min = 0.0` | `ros2 topic echo /scan --once` | 丢弃 NaN 和小于 5 cm 的读数 |
+| 车架空时转弯永远转不完 | 驱动设置 `use_imu: true` | 只在地上测转弯 |
+| 拔电源线时机器人电脑会重启 | `uptime` | 搬车前先换电池；重启后重开路由和 bringup |
+
 **Lab04 检查清单**
 
 1. 按顺序启动，每个一个终端，开了就别关：**路由 → bringup →（录制）→ 控制器**。路由一旦重启，bringup 和控制器也要重启。
 2. 确认路由在监听：`ss -ltn | grep 7447`
-3. 单独测电机（车架空）：`ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.22}}"`
+3. 单独测电机（车架空）：`ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1}}"`（不要用 0.22，见下面）
 4. 运行控制器，看它每 2 秒打印的状态（`state=... v=... odom=...`）。
 5. 另一个终端：`ros2 topic info /cmd_vel` → `Publisher count: 1`、`Subscription count: 1`。
 6. bringup 报 `There is no status packet` / `stack smashing detected`：电机板断电 10 秒再开（等音乐响完），重启 bringup。
