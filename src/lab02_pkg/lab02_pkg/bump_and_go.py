@@ -26,6 +26,10 @@ class BumpAndGo(Node):
         self.declare_parameter('rotation_tolerance_deg', 5.0)  # [deg] turn tolerance
         self.declare_parameter('min_angular_vel', 0.3)      # [rad/s] motor dead zone
         self.declare_parameter('sensor_timeout_sec', 1.0)  # [s] stop if sensors become stale
+        self.declare_parameter('turn_angle_deg', 90.0)      # [deg] largest turn after a bump
+        self.declare_parameter('snap_to_axes', True)        # round the turn to the maze axes
+        self.declare_parameter('turn_until_clear', False)   # stop turning once the front is free
+        self.declare_parameter('clear_margin', 0.3)         # [m] free = threshold + margin
         self.v_max = self.get_parameter('max_linear_vel').value
         self.w_max = self.get_parameter('max_angular_vel').value
         self.threshold = self.get_parameter('obstacle_threshold').value
@@ -35,6 +39,10 @@ class BumpAndGo(Node):
         self.rot_tol = math.radians(self.get_parameter('rotation_tolerance_deg').value)
         self.w_min = self.get_parameter('min_angular_vel').value
         self.sensor_timeout = self.get_parameter('sensor_timeout_sec').value
+        self.turn_angle = math.radians(self.get_parameter('turn_angle_deg').value)
+        self.snap = self.get_parameter('snap_to_axes').value
+        self.until_clear = self.get_parameter('turn_until_clear').value
+        self.clear_margin = self.get_parameter('clear_margin').value
         period = 1.0 / self.get_parameter('control_frequency').value
         if self.sensor_timeout <= 0:
             raise ValueError('sensor_timeout_sec must be positive')
@@ -53,6 +61,7 @@ class BumpAndGo(Node):
         self.x = self.y = self.yaw = 0.0
         self.state = 'GO'          # 'GO', 'ROTATE' or 'DONE'
         self.target_yaw = 0.0
+        self.turn_start_yaw = 0.0
 
     # ---------- 2. Sensors: remember the latest data ----------
     def scan_callback(self, msg):
@@ -130,9 +139,11 @@ class BumpAndGo(Node):
                     self.cmd_pub.publish(cmd)
                     self.last_cmd = cmd
                     return
-                turn = math.pi / 2 if left > right else -math.pi / 2
-                # snap to the maze axes (0, 90, 180, 270 deg)
-                self.target_yaw = round((self.yaw + turn) / (math.pi / 2)) * (math.pi / 2)
+                turn = self.turn_angle if left > right else -self.turn_angle
+                self.target_yaw = self.yaw + turn
+                if self.snap:                   # snap to the maze axes (0, 90, 180, 270 deg)
+                    self.target_yaw = round(self.target_yaw / (math.pi / 2)) * (math.pi / 2)
+                self.turn_start_yaw = self.yaw
                 self.state = 'ROTATE'
                 self.get_logger().info(
                     f'wall at {front:.2f} m (left {left:.2f}, right {right:.2f}) -> turn '
@@ -141,7 +152,11 @@ class BumpAndGo(Node):
         elif self.state == 'ROTATE':
             error = math.atan2(math.sin(self.target_yaw - self.yaw),
                                math.cos(self.target_yaw - self.yaw))
-            if abs(error) < self.rot_tol:
+            turned = abs(math.atan2(math.sin(self.yaw - self.turn_start_yaw),
+                                    math.cos(self.yaw - self.turn_start_yaw)))
+            front_clear = (self.until_clear and turned > math.radians(20.0)
+                           and front > self.threshold + self.clear_margin)
+            if abs(error) < self.rot_tol or front_clear:
                 self.state = 'GO'
             else:
                 w = max(-self.w_max, min(self.w_max, 2.0 * error))   # P controller
