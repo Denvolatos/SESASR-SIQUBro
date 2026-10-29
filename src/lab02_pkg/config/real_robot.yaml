@@ -1,0 +1,20 @@
+# Real TurtleBot3 (Lab03/Lab04). Used by: ros2 launch lab02_pkg bump_and_go.launch.py robot:=real
+# Values found on robot 03 on 10/29, see docs/OPERATION_GUIDE.md part 10.
+bump_and_go:
+  ros__parameters:
+    max_linear_vel: 0.15        # [m/s] at 0.22 the real robot only turned and never drove forward
+    max_angular_vel: 1.5        # [rad/s]
+    obstacle_threshold: 0.5     # [m]
+    stop_at_goal: false         # no goal position in the real arena
+    goal_x: 0.0
+    goal_y: 0.0
+    goal_tolerance: 0.8
+    rotation_tolerance_deg: 5.0
+    min_angular_vel: 0.3        # [rad/s] below this the real motors do not move (dead zone)
+    turn_angle_deg: 45.0        # largest turn; in a corner it bumps again and turns 45 deg more
+    snap_to_axes: false         # odometry axes depend on how the robot was placed
+    turn_until_clear: true      # stop turning as soon as the front is free
+    clear_margin: 0.3           # [m] free = obstacle_threshold + clear_margin
+    side_metric: median            # median: one close corner does not hide a corridor
+    control_frequency: 10.0     # [Hz]
+    sensor_timeout_sec: 1.0     # [s]

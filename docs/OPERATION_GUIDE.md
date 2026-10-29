@@ -13,7 +13,7 @@ This guide assumes **no prior experience**. Follow the steps in order. Each step
 | Word | Meaning |
 |---|---|
 | **Terminal** | A window where you type commands. In Ubuntu: press `Ctrl+Alt+T`, or search "Terminal" in the apps menu. Type a command, press `Enter`. |
-| **Workspace** | A folder for ROS 2 code, e.g. `~/ros2_ws`. Source code goes in its `src/` sub-folder. (`~` means your home folder.) |
+| **Workspace** | A folder for ROS 2 code. In this guide `~/SESASR-SIQUBro` is the group workspace, with ROS packages in `src/`. (`~` means your home folder.) |
 | **Build** | `colcon build` prepares the code so ROS 2 can run it. Always run it in the workspace folder, never inside `src/`. |
 | **Source** | `source install/setup.bash` tells *this* terminal where your code is. **Every new terminal needs it** — otherwise you get `Package not found`. |
 | **Node / Topic** | A node is a running program. Nodes talk through topics: the controller *reads* `/scan` (laser) and `/odom` (position) and *writes* `/cmd_vel` (velocity). |
@@ -42,20 +42,22 @@ sudo apt install -y git ros-humble-tf-transformations
 ### Part 2 — Get the code (once)
 
 ```bash
-mkdir -p ~/ros2_ws/src
-cd ~/ros2_ws/src
-git clone https://github.com/Denvolatos/SESASR-SIQUBro.git
-cd ~/ros2_ws
+git clone https://github.com/Denvolatos/SESASR-SIQUBro.git ~/SESASR-SIQUBro
+cd ~/SESASR-SIQUBro
+source /opt/ros/humble/setup.bash
 colcon build --symlink-install
 ```
 
 ✅ The last line says `Summary: 1 package finished`.
 
+If you work from a fork, replace the clone URL with your fork URL. If you already cloned the repository, keep that checkout and run the build commands inside it. The Git repository itself is the workspace root; `src/` contains the ROS packages.
+
 Later, to get your teammates' latest changes:
 
 ```bash
-cd ~/ros2_ws/src/SESASR-SIQUBro && git pull
-cd ~/ros2_ws && colcon build --symlink-install
+cd ~/SESASR-SIQUBro
+git pull
+colcon build --symlink-install
 ```
 
 ### Part 3 — Prepare the simulation (once)
@@ -86,6 +88,8 @@ colcon build --symlink-install
 
 ✅ `Summary: ... packages finished`.
 
+If the course simulation is already built in another workspace (for example `~/ros2_ws`), use that workspace in Terminal 1 below. Do not source a workspace containing another `lab02_pkg` in the controller terminal.
+
 ### Part 4 — Run the simulation (every time)
 
 You need **two terminals**.
@@ -98,6 +102,7 @@ export TURTLEBOT3_MODEL=burger
 ros2 launch turtlebot3_ignition lab02.launch.py
 ```
 
+- If you already built the simulation in `~/ros2_ws`, replace `~/ros_ws` in Terminal 1 with `~/ros2_ws`.
 - On Intel/AMD PCs with Gazebo Classic use `turtlebot3_gazebo` instead of `turtlebot3_ignition`.
 - **In a virtual machine** (UTM, VirtualBox…), first run `export LIBGL_ALWAYS_SOFTWARE=1`, otherwise Gazebo may crash.
 
@@ -106,8 +111,8 @@ ros2 launch turtlebot3_ignition lab02.launch.py
 **Terminal 2 — the controller**
 
 ```bash
-source ~/ros2_ws/install/setup.bash
-ros2 run lab02_pkg bump_and_go
+source ~/SESASR-SIQUBro/install/setup.bash
+ros2 launch lab02_pkg bump_and_go.launch.py
 ```
 
 ✅ The robot drives forward; at each wall the terminal prints a line like
@@ -121,7 +126,7 @@ After about 4 minutes: `goal reached at x=5.87 y=3.45`.
 Open a **third terminal** *after* the world is running and *before* starting the controller:
 
 ```bash
-mkdir -p ~/ros2_ws/bags && cd ~/ros2_ws/bags
+mkdir -p ~/SESASR-SIQUBro/bags && cd ~/SESASR-SIQUBro/bags
 ros2 bag record -o lab02_sim /odom /ground_truth /cmd_vel /scan
 ```
 
@@ -136,10 +141,10 @@ ros2 bag info lab02_sim
 Make the plots:
 
 ```bash
-python3 ~/ros2_ws/src/SESASR-SIQUBro/scripts/plot_bag.py lab02_sim
+python3 ~/SESASR-SIQUBro/scripts/plot_bag.py lab02_sim
 ```
 
-✅ The PDF/PNG files are in `~/ros2_ws/bags/plots/`. Use the PDFs in the report.
+✅ The PDF/PNG files are in `~/SESASR-SIQUBro/bags/plots/`. Use the PDFs in the report. The `bags/` directory is ignored by Git.
 
 ### Part 6 — Real robot (Lab03 / Lab04)
 
@@ -149,29 +154,29 @@ python3 ~/ros2_ws/src/SESASR-SIQUBro/scripts/plot_bag.py lab02_sim
 |---|---|---|---|
 | 1 | Your PC | Connect to Wi-Fi `SESASR_WiFi` (password in the Lab03 document) | Internet icon connected |
 | 2 | Your PC terminal | `ssh students@192.168.10.1XX` (password in the Lab03 document); answer `yes` the first time | Prompt becomes `students@nucXX` |
-| 3 | Robot (SSH) | `nano ~/.bashrc`: check `ROS_DOMAIN_ID=XX` (no leading 0), `RMW_IMPLEMENTATION=rmw_zenoh_cpp`, comment other groups' workspaces with `#`. Save: `Ctrl+O`, `Enter`, `Ctrl+X`. Then `source ~/.bashrc` | — |
+| 3 | Robot (SSH) | `nano ~/.bashrc`: check `ROS_DOMAIN_ID=XX` (no leading 0), `RMW_IMPLEMENTATION=rmw_zenoh_cpp`, comment other groups' workspaces with `#`. Save: `Ctrl+O`, `Enter`, `Ctrl+X`. Then `source ~/.bashrc`. If another group's workspace stays in `.bashrc` (it may also contain a `lab02_pkg`), run `source ~/group_NNN/install/setup.bash` in every new terminal | — |
 | 4 | Robot (SSH) | `ros2 run rmw_zenoh_cpp rmw_zenohd` (keep it running; only one!) | No error |
 | 5 | Robot (new SSH) | `ros2 launch turtlebot3_bringup robot.launch.py` | Log shows `LDS-02 started successfully` and `Run!` |
 | 6 | Robot (new SSH) | `mkdir -p ~/group_NNN/src && cd ~/group_NNN/src && git clone https://github.com/Denvolatos/SESASR-SIQUBro.git && cd .. && colcon build --symlink-install && source install/setup.bash` | `1 package finished` |
-| 7 | Desk | **Robot lifted, wheels in the air.** Power on; then in step 6's terminal: `ros2 run lab02_pkg bump_and_go --ros-args -p stop_at_goal:=false` | Wheels turn; `Ctrl+C` to stop |
-| 8 | Test field | Put the robot down, start recording in another SSH: `ros2 bag record -o lab03_real /odom /cmd_vel /scan`, then run the controller again | Robot avoids walls |
+| 7 | Desk | **Robot lifted, wheels in the air.** Power on; then in step 6's terminal: `ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1}}"` | Wheels turn; `Ctrl+C` to stop. (Do not test the controller lifted: the yaw comes from the IMU, so a turn never finishes.) |
+| 8 | Test field | Put the robot down, start recording in another SSH: `ros2 bag record -o lab04_real /odom /cmd_vel /scan /imu`, then in step 6's terminal: `ros2 launch lab02_pkg bump_and_go.launch.py robot:=real` | Robot avoids walls |
 | 9 | After the run | `Ctrl+C` the recorder, copy the bag to your PC (see below) | `ros2 bag info lab03_real` works |
 
 If the robot PC has no internet (git clone fails), copy the code from your PC instead:
 
 ```bash
-scp -r ~/ros2_ws/src/SESASR-SIQUBro students@192.168.10.1XX:~/group_NNN/src/
+scp -r ~/SESASR-SIQUBro/src/lab02_pkg students@192.168.10.1XX:~/group_NNN/src/
 ```
 
 Copy the recording back to your PC (run on **your PC**):
 
 ```bash
-scp -r students@192.168.10.1XX:~/group_NNN/bags/lab03_real ~/ros2_ws/bags/
+scp -r students@192.168.10.1XX:~/group_NNN/bags/lab03_real ~/SESASR-SIQUBro/bags/
 ```
 
 (Adjust the path to where you started `ros2 bag record`.)
 
-⚠️ Safety: stay next to the robot. `Ctrl+C` stops the program, but the robot may keep its last command — lift it if needed. If it gets too close to walls, add `-p obstacle_threshold:=0.6`.
+⚠️ Safety: stay next to the robot. `Ctrl+C` stops the program, but the robot may keep its last command — lift it if needed. Emergency stop from any terminal: `pkill -f "lib/lab02_pkg/bump_and_go"; ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{}"`. To change speed, turn angle or threshold, edit `src/lab02_pkg/config/real_robot.yaml` and run `colcon build` again.
 
 ### Part 7 — Optional: see the robot's laser in RViz on your PC
 
@@ -191,7 +196,7 @@ ros2 launch turtlebot3_bringup rviz2.launch.py
 
 | Problem | Cause → Fix |
 |---|---|
-| `Package 'lab02_pkg' not found` | Workspace not sourced in this terminal → `source ~/ros2_ws/install/setup.bash` |
+| `Package 'lab02_pkg' not found` | Group workspace not sourced in this terminal → `source ~/SESASR-SIQUBro/install/setup.bash` |
 | Gazebo crashes with `Segmentation fault` / `OpenGL 3.3 is not supported` (virtual machine) | VM graphics too old → `export LIBGL_ALWAYS_SOFTWARE=1` before launching |
 | No topics after restarting Gazebo | An old Gazebo server is still running → wait for the prompt after `Ctrl+C`, or `pkill -f gazebo` |
 | No `/scan` messages on the real robot | Wrong QoS → the subscription must use `qos_profile_sensor_data` (already done) |
@@ -203,6 +208,7 @@ ros2 launch turtlebot3_bringup rviz2.launch.py
 
 
 ```bash
+cd ~/SESASR-SIQUBro
 git pull                     # before you start
 # ... edit, test ...
 git add -A && git commit -m "describe the change"
@@ -224,15 +230,26 @@ What we learned on 22/10 (robot 3) and in simulation tests:
 
 Conclusion: the controller logic is correct; "not moving at start" on the real robot was most likely a communication problem (the Zenoh router stopped several times; nodes started before a router restart cannot reach the robot).
 
+**Lab04 results (29/10, robot 3)** — these are now the defaults in `config/real_robot.yaml`:
+
+| Finding | Evidence | Fix |
+|---|---|---|
+| **At 0.22 m/s the robot only turns, it never drives forward** (also the "only turns" of 22/10) | Controller sends `v=0.22` for 15 s, front distance unchanged; 0.1 and 0.15 m/s drive normally | `max_linear_vel: 0.15` |
+| Choosing the side by the closest point picks the wrong way (one corner hides a corridor) → the robot went back the way it came | Turn log of `lab04_real_3` | Median of the side sector (real robot only; `side_metric`) |
+| Turns snapped to 90° multiples are too large: the odometry axes depend on how the robot was placed | — | `snap_to_axes: false`, `turn_until_clear: true`, `turn_angle_deg: 45` |
+| The LDS-02 reports **NaN** for no return and `range_min = 0.0` | `ros2 topic echo /scan --once` | NaN ignored, readings below 5 cm ignored |
+| Lifted, a turn never finishes | Driver uses `use_imu: true` | Test turning on the floor only |
+| The robot PC reboots when the power cable is pulled | `uptime` | Use the battery before moving the robot; restart router and bringup |
+
 **Lab04 checklist**
 
 1. Start in this order, each in its own terminal, and never close them: **router → bringup → (rosbag) → controller**. If the router is restarted, restart bringup and the controller too.
 2. Check the router is listening: `ss -ltn | grep 7447`
-3. Test the motors alone (robot lifted): `ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.22}}"`
+3. Test the motors alone (robot lifted): `ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1}}"` (not 0.22, see below)
 4. Run the controller and read its status line every 2 s (`state=... v=... odom=...`).
 5. In another terminal: `ros2 topic info /cmd_vel` → `Publisher count: 1`, `Subscription count: 1`.
 6. If bringup prints `There is no status packet` / `stack smashing detected`: power the motor board off for 10 s, on again (wait for the music), restart bringup.
-7. Test runner: `scripts/run_dz_test.sh <label> <tolerance_deg> <min_w> <seconds> [none|zero|box]` (simulation, Gazebo Classic).
+7. From the repository root, test runner: `SIM_WS=~/ros_ws scripts/run_dz_test.sh <label> <tolerance_deg> <min_w> <seconds> [none|zero|box]` (simulation, Gazebo Classic; set `SIM_WS=~/ros2_ws` if that is your simulation workspace).
 
 ---
 
@@ -245,7 +262,7 @@ Conclusion: the controller logic is correct; "not moving at start" on the real r
 | 词 | 意思 |
 |---|---|
 | **终端（Terminal）** | 输入命令的窗口。Ubuntu 里按 `Ctrl+Alt+T`，或在应用菜单搜 "Terminal"。敲完命令按 `Enter` 回车。 |
-| **工作区（Workspace）** | 放 ROS 2 代码的文件夹，比如 `~/ros2_ws`，源代码放在它的 `src/` 子文件夹里。（`~` 表示你的家目录。） |
+| **工作区（Workspace）** | 放 ROS 2 代码的文件夹。本指南以 `~/SESASR-SIQUBro` 为小组工作区，ROS 包放在其中的 `src/`。（`~` 表示你的家目录。） |
 | **编译（Build）** | `colcon build` 把代码准备好，让 ROS 2 能运行它。一定要在工作区根目录运行，不能在 `src/` 里面。 |
 | **Source** | `source install/setup.bash` 告诉**当前这个**终端你的代码在哪里。**每开一个新终端都要做一次**，否则会报 `Package not found`。 |
 | **节点 / 话题** | 节点是一个正在运行的程序，节点之间通过话题通信：控制器**读** `/scan`（激光）和 `/odom`（位置），**写** `/cmd_vel`（速度）。 |
@@ -274,20 +291,22 @@ sudo apt install -y git ros-humble-tf-transformations
 ### 第 2 部分：下载代码（只做一次）
 
 ```bash
-mkdir -p ~/ros2_ws/src
-cd ~/ros2_ws/src
-git clone https://github.com/Denvolatos/SESASR-SIQUBro.git
-cd ~/ros2_ws
+git clone https://github.com/Denvolatos/SESASR-SIQUBro.git ~/SESASR-SIQUBro
+cd ~/SESASR-SIQUBro
+source /opt/ros/humble/setup.bash
 colcon build --symlink-install
 ```
 
 ✅ 最后一行显示 `Summary: 1 package finished`。
 
+如果你使用自己的 fork，把克隆 URL 换成 fork 地址。已经克隆过的，保留现有目录，直接在仓库根目录编译。Git 仓库本身就是工作区根目录，ROS 包放在 `src/`。
+
 以后要拿到组员的最新修改：
 
 ```bash
-cd ~/ros2_ws/src/SESASR-SIQUBro && git pull
-cd ~/ros2_ws && colcon build --symlink-install
+cd ~/SESASR-SIQUBro
+git pull
+colcon build --symlink-install
 ```
 
 ### 第 3 部分：准备仿真环境（只做一次）
@@ -318,6 +337,8 @@ colcon build --symlink-install
 
 ✅ 显示 `Summary: ... packages finished`。
 
+如果课程仿真已经编译在其他工作区（例如 `~/ros2_ws`），下面的终端 1 改为加载那个工作区。运行控制器的终端不要加载含有另一个 `lab02_pkg` 的工作区。
+
 ### 第 4 部分：运行仿真（每次）
 
 需要开**两个终端**。
@@ -330,6 +351,7 @@ export TURTLEBOT3_MODEL=burger
 ros2 launch turtlebot3_ignition lab02.launch.py
 ```
 
+- 如果已有仿真编译在 `~/ros2_ws`，终端 1 把 `~/ros_ws` 换成 `~/ros2_ws`。
 - Intel/AMD 电脑用 Gazebo Classic 的话，把 `turtlebot3_ignition` 换成 `turtlebot3_gazebo`。
 - **在虚拟机里**（UTM、VirtualBox 等）先运行 `export LIBGL_ALWAYS_SOFTWARE=1`，否则 Gazebo 可能会崩溃。
 
@@ -338,8 +360,8 @@ ros2 launch turtlebot3_ignition lab02.launch.py
 **终端 2：控制器**
 
 ```bash
-source ~/ros2_ws/install/setup.bash
-ros2 run lab02_pkg bump_and_go
+source ~/SESASR-SIQUBro/install/setup.bash
+ros2 launch lab02_pkg bump_and_go.launch.py
 ```
 
 ✅ 小车开始往前走，每遇到一面墙，终端打印一行，比如
@@ -353,7 +375,7 @@ ros2 run lab02_pkg bump_and_go
 在仿真世界**已经打开**、控制器**还没启动**的时候，开**第三个终端**：
 
 ```bash
-mkdir -p ~/ros2_ws/bags && cd ~/ros2_ws/bags
+mkdir -p ~/SESASR-SIQUBro/bags && cd ~/SESASR-SIQUBro/bags
 ros2 bag record -o lab02_sim /odom /ground_truth /cmd_vel /scan
 ```
 
@@ -368,10 +390,10 @@ ros2 bag info lab02_sim
 画图：
 
 ```bash
-python3 ~/ros2_ws/src/SESASR-SIQUBro/scripts/plot_bag.py lab02_sim
+python3 ~/SESASR-SIQUBro/scripts/plot_bag.py lab02_sim
 ```
 
-✅ PDF/PNG 图片在 `~/ros2_ws/bags/plots/` 里，报告里用 PDF 版。
+✅ PDF/PNG 图片在 `~/SESASR-SIQUBro/bags/plots/` 里，报告里用 PDF 版。`bags/` 已被 Git 忽略。
 
 ### 第 6 部分：真车（Lab03 / Lab04）
 
@@ -381,29 +403,29 @@ python3 ~/ros2_ws/src/SESASR-SIQUBro/scripts/plot_bag.py lab02_sim
 |---|---|---|---|
 | 1 | 自己电脑 | 连 WiFi `SESASR_WiFi`（密码见 Lab03 文档） | 网络已连接 |
 | 2 | 自己电脑的终端 | `ssh students@192.168.10.1XX`（密码见 Lab03 文档），第一次连接时回答 `yes` | 提示符变成 `students@nucXX` |
-| 3 | 机器人（SSH） | `nano ~/.bashrc`：检查 `ROS_DOMAIN_ID=XX`（前面不带 0）、`RMW_IMPLEMENTATION=rmw_zenoh_cpp`，其他组的工作区那几行前面加 `#` 注释掉。保存：`Ctrl+O`、回车、`Ctrl+X`。然后 `source ~/.bashrc` | — |
+| 3 | 机器人（SSH） | `nano ~/.bashrc`：检查 `ROS_DOMAIN_ID=XX`（前面不带 0）、`RMW_IMPLEMENTATION=rmw_zenoh_cpp`，其他组的工作区那几行前面加 `#` 注释掉。保存：`Ctrl+O`、回车、`Ctrl+X`。然后 `source ~/.bashrc`。如果 `.bashrc` 里还留着别的组的工作区（里面可能也有 `lab02_pkg`），每个新终端都先运行 `source ~/group_NNN/install/setup.bash` | — |
 | 4 | 机器人（SSH） | `ros2 run rmw_zenoh_cpp rmw_zenohd`（保持运行，只开一个！） | 没有报错 |
 | 5 | 机器人（新开 SSH） | `ros2 launch turtlebot3_bringup robot.launch.py` | 日志里有 `LDS-02 started successfully` 和 `Run!` |
 | 6 | 机器人（新开 SSH） | `mkdir -p ~/group_NNN/src && cd ~/group_NNN/src && git clone https://github.com/Denvolatos/SESASR-SIQUBro.git && cd .. && colcon build --symlink-install && source install/setup.bash` | `1 package finished` |
-| 7 | 桌上 | **把车架空，轮子离开桌面**。打开电源，在第 6 步的终端里运行：`ros2 run lab02_pkg bump_and_go --ros-args -p stop_at_goal:=false` | 轮子会转；`Ctrl+C` 停止 |
-| 8 | 场地上 | 把车放到地上，另开一个 SSH 开始录：`ros2 bag record -o lab03_real /odom /cmd_vel /scan`，再运行一次控制器 | 车能自己绕开墙 |
+| 7 | 桌上 | **把车架空，轮子离开桌面**。打开电源，在第 6 步的终端里运行：`ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1}}"` | 轮子会转；`Ctrl+C` 停止。（不要架空测控制器：朝向来自 IMU，车身不转，转弯永远转不完。） |
+| 8 | 场地上 | 把车放到地上，另开一个 SSH 开始录：`ros2 bag record -o lab04_real /odom /cmd_vel /scan /imu`，再在第 6 步的终端里运行：`ros2 launch lab02_pkg bump_and_go.launch.py robot:=real` | 车能自己绕开墙 |
 | 9 | 跑完之后 | 录制终端按 `Ctrl+C`，把录像拷回自己电脑（见下面） | `ros2 bag info lab03_real` 正常 |
 
 如果机器人电脑上不了网（git clone 失败），就从自己电脑把代码拷过去：
 
 ```bash
-scp -r ~/ros2_ws/src/SESASR-SIQUBro students@192.168.10.1XX:~/group_NNN/src/
+scp -r ~/SESASR-SIQUBro/src/lab02_pkg students@192.168.10.1XX:~/group_NNN/src/
 ```
 
 把录像拷回自己电脑（在**自己电脑**上运行）：
 
 ```bash
-scp -r students@192.168.10.1XX:~/group_NNN/bags/lab03_real ~/ros2_ws/bags/
+scp -r students@192.168.10.1XX:~/group_NNN/bags/lab03_real ~/SESASR-SIQUBro/bags/
 ```
 
 （路径改成你运行 `ros2 bag record` 时所在的文件夹。）
 
-⚠️ 安全：人要站在车旁边。`Ctrl+C` 会停掉程序，但车可能还会按最后一条指令继续动，必要时直接把车拿起来。车离墙太近才转弯的话，加 `-p obstacle_threshold:=0.6`。
+⚠️ 安全：人要站在车旁边。`Ctrl+C` 会停掉程序，但车可能还会按最后一条指令继续动，必要时直接把车拿起来。任何终端都能急停：`pkill -f "lib/lab02_pkg/bump_and_go"; ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{}"`。要改速度、转弯角度或阈值，就改 `src/lab02_pkg/config/real_robot.yaml`，然后重新 `colcon build`。
 
 ### 第 7 部分（可选）：在自己电脑上用 RViz 看真车的激光
 
@@ -423,7 +445,7 @@ ros2 launch turtlebot3_bringup rviz2.launch.py
 
 | 问题 | 原因 → 解决 |
 |---|---|
-| `Package 'lab02_pkg' not found` | 这个终端没 source 工作区 → `source ~/ros2_ws/install/setup.bash` |
+| `Package 'lab02_pkg' not found` | 这个终端没加载小组工作区 → `source ~/SESASR-SIQUBro/install/setup.bash` |
 | 虚拟机里 Gazebo 崩溃：`Segmentation fault` / `OpenGL 3.3 is not supported` | 虚拟显卡不支持 → 启动前 `export LIBGL_ALWAYS_SOFTWARE=1` |
 | 重开 Gazebo 后没有话题 | 旧的 Gazebo 服务器还在跑 → `Ctrl+C` 后等提示符出现再重开，或 `pkill -f gazebo` |
 | 真车上收不到 `/scan` | QoS 不对 → 订阅要用 `qos_profile_sensor_data`（已改好） |
@@ -435,6 +457,7 @@ ros2 launch turtlebot3_bringup rviz2.launch.py
 
 
 ```bash
+cd ~/SESASR-SIQUBro
 git pull                     # 开始前先拉取
 # ……修改、测试……
 git add -A && git commit -m "写清楚改了什么"
@@ -456,13 +479,24 @@ git push
 
 结论：控制器逻辑没问题；真车"一开始不动"最可能是通信问题（当天 zenoh 路由停过好几次，路由重启前启动的节点连不上车）。
 
+**Lab04 结果（10/29，3 号机器人）**，现在都已经是 `config/real_robot.yaml` 的默认值：
+
+| 发现 | 证据 | 解决 |
+|---|---|---|
+| **速度 0.22 m/s 时车只转不走**（10/22 的"只转不走"也是这个原因） | 控制器发 `v=0.22` 发了 15 秒，前方距离不变；0.1 和 0.15 m/s 都能正常前进 | `max_linear_vel: 0.15` |
+| 用最近点选左右会选错（一个墙角挡住整条通道），车走回头路 | `lab04_real_3` 的转弯记录 | 左右改用扇区中位数（只用于真车；`side_metric`） |
+| 转向角对齐 90° 倍数转得太多：里程计坐标轴取决于开机时车怎么放 | — | `snap_to_axes: false`、`turn_until_clear: true`、`turn_angle_deg: 45` |
+| LDS-02 打空返回 **NaN**，且 `range_min = 0.0` | `ros2 topic echo /scan --once` | 丢弃 NaN 和小于 5 cm 的读数 |
+| 车架空时转弯永远转不完 | 驱动设置 `use_imu: true` | 只在地上测转弯 |
+| 拔电源线时机器人电脑会重启 | `uptime` | 搬车前先换电池；重启后重开路由和 bringup |
+
 **Lab04 检查清单**
 
 1. 按顺序启动，每个一个终端，开了就别关：**路由 → bringup →（录制）→ 控制器**。路由一旦重启，bringup 和控制器也要重启。
 2. 确认路由在监听：`ss -ltn | grep 7447`
-3. 单独测电机（车架空）：`ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.22}}"`
+3. 单独测电机（车架空）：`ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1}}"`（不要用 0.22，见下面）
 4. 运行控制器，看它每 2 秒打印的状态（`state=... v=... odom=...`）。
 5. 另一个终端：`ros2 topic info /cmd_vel` → `Publisher count: 1`、`Subscription count: 1`。
 6. bringup 报 `There is no status packet` / `stack smashing detected`：电机板断电 10 秒再开（等音乐响完），重启 bringup。
-7. 测试脚本：`scripts/run_dz_test.sh <标签> <容差°> <最小转速> <秒> [none|zero|box]`（仿真，Gazebo Classic）。
+7. 在仓库根目录运行测试脚本：`SIM_WS=~/ros_ws scripts/run_dz_test.sh <标签> <容差°> <最小转速> <秒> [none|zero|box]`（仿真，Gazebo Classic；如果仿真在 `~/ros2_ws`，把 `SIM_WS` 改成 `~/ros2_ws`）。
 

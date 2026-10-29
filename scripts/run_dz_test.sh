@@ -2,10 +2,16 @@
 # Dead-zone comparison test in Gazebo Classic.
 # usage: run_dz_test.sh <label> <rotation_tolerance_deg> <min_angular_vel> <seconds>
 LABEL=$1; TOL=$2; WMIN=$3; DUR=$4; EXTRA=${5:-none}   # none | zero | box
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SIM_WS="${SIM_WS:-$HOME/ros_ws}"
+if [ ! -f "$SIM_WS/install/setup.bash" ] || [ ! -f "$PROJECT_ROOT/install/setup.bash" ]; then
+  echo "Build both the simulation and group workspaces before running this script." >&2
+  exit 1
+fi
 source /usr/share/gazebo/setup.bash
 source /opt/ros/humble/setup.bash
-source ~/ros_ws/install/setup.bash
-source ~/ros2_ws/install/setup.bash
+source "$SIM_WS/install/setup.bash"
+source "$PROJECT_ROOT/install/setup.bash"
 export TURTLEBOT3_MODEL=burger
 L=/tmp/dz_$LABEL; mkdir -p $L
 echo "DISPLAY=$DISPLAY WAYLAND=$WAYLAND_DISPLAY"
@@ -27,7 +33,7 @@ if [ "$EXTRA" = zero ]; then
   setsid ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{}" > $L/zero.log 2>&1 < /dev/null &
   echo "extra zero publisher on /cmd_vel at 10 Hz"
 fi
-setsid python3 ~/ros2_ws/scripts/deadzone_filter.py > $L/filter.log 2>&1 < /dev/null &
+setsid python3 "$PROJECT_ROOT/scripts/deadzone_filter.py" > $L/filter.log 2>&1 < /dev/null &
 setsid ros2 run lab02_pkg bump_and_go --ros-args -r /cmd_vel:=/cmd_vel_raw \
   -p rotation_tolerance_deg:=$TOL -p min_angular_vel:=$WMIN > $L/ctrl.log 2>&1 < /dev/null &
 POSE=/ground_truth; ros2 topic list | grep -q '^/ground_truth$' || POSE=/odom

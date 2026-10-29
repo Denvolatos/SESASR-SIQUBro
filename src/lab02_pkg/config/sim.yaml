@@ -1,0 +1,19 @@
+# Gazebo simulation (Lab02 maze). Used by: ros2 launch lab02_pkg bump_and_go.launch.py
+bump_and_go:
+  ros__parameters:
+    max_linear_vel: 0.22        # [m/s] TurtleBot3 Burger limit, fine in simulation
+    max_angular_vel: 1.5        # [rad/s]
+    obstacle_threshold: 0.5     # [m]
+    stop_at_goal: true          # stop at the green cube
+    goal_x: 6.5                 # [m]
+    goal_y: 3.0
+    goal_tolerance: 0.8
+    rotation_tolerance_deg: 5.0
+    min_angular_vel: 0.3        # [rad/s]
+    turn_angle_deg: 90.0
+    snap_to_axes: true          # maze walls are aligned with the odometry axes
+    turn_until_clear: false
+    clear_margin: 0.3
+    side_metric: min               # closest point: reached the goal in simulation
+    control_frequency: 10.0     # [Hz]
+    sensor_timeout_sec: 1.0     # [s]

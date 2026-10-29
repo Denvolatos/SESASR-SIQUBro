@@ -2,9 +2,12 @@
 build/
 install/
 log/
+# Local editor settings and indexes
+.vscode/
 # Python
 __pycache__/
 *.pyc
+*.egg-info/
 # rosbag recordings (share them via cloud storage, not git)
 bags/
 *.db3
