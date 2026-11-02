@@ -42,8 +42,8 @@ grep -q "diff_drive_controller\]: Run!" $LOG/bringup.log || { echo "FAIL: bringu
 echo "    bringup OK"
 sleep 2
 
-echo "3/4 driving forward 0.22 m/s for 3 s (wheels must be lifted) ..."
-timeout 4 ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.22}}" > /dev/null 2>&1 &
+echo "3/4 driving forward 0.1 m/s for 3 s (wheels must be lifted) ..."
+timeout 4 ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1}}" > /dev/null 2>&1 &
 PUB=$!
 sleep 2.5
 timeout 3 ros2 topic echo /odom --once --field twist.twist.linear | head -1
