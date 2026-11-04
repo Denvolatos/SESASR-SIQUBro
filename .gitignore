@@ -16,3 +16,11 @@ bags/
 plots/
 # macOS
 .DS_Store
+
+# LaTeX build intermediates
+report/ieeeconf/*.aux
+report/ieeeconf/*.fdb_latexmk
+report/ieeeconf/*.fls
+report/ieeeconf/*.log
+report/ieeeconf/*.synctex.gz
+report/ieeeconf/*.xdv
