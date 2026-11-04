@@ -221,14 +221,14 @@ Every member must be able to explain the code at the oral exam: read it, run it,
 
 What we learned on 22/10 (robot 3) and in simulation tests:
 
-| Test (simulation, motor dead zone added with `scripts/deadzone_filter.py`) | Result |
+| Test (simulation, assumed dead zone of 0.25 rad/s added with `scripts/deadzone_filter.py`) | Result |
 |---|---|
-| A: old parameters (2° tolerance, no minimum ω) | Drives 4 m, then **stuck forever in the first turn**: the P controller asks for ω≈0.17 rad/s, below the dead zone |
-| B: new parameters (5° tolerance, minimum ω 0.3) | **Reaches the goal in 160 s** |
+| A: old parameters (2° tolerance, no minimum ω) | Drives 4 m, then **stuck forever in the first turn**: the P controller asks for ω≈0.22 rad/s, inside the dead zone |
+| B: new parameters (5° tolerance, minimum ω 0.3) | **Reaches the goal: 10 turns, 225 s** |
 | C: extra node publishing zero velocity | Still drives forward → not the cause of "not moving at start" |
 | D: obstacle in front at start | Turns immediately, then stuck → does not match what we saw |
 
-Conclusion: the controller logic is correct; "not moving at start" on the real robot was most likely a communication problem (the Zenoh router stopped several times; nodes started before a router restart cannot reach the robot).
+Conclusion: tests A and B show what would happen if the motors had such a dead zone, so the minimum ω is a precaution; the dead zone was not measured, and the real-robot bags do not show this stall. Tests C and D were run with the code of 23/10. "Not moving" on the real robot matches the 0.22 m/s problem below; its root cause was not found.
 
 **Lab04 results (29/10, robot 3)** — these are now the defaults in `config/real_robot.yaml`:
 
@@ -470,14 +470,14 @@ git push
 
 10/22（3 号机器人）和之后仿真测试的结论：
 
-| 测试（仿真，用 `scripts/deadzone_filter.py` 加入电机死区） | 结果 |
+| 测试（仿真，用 `scripts/deadzone_filter.py` 加入假设的 0.25 rad/s 死区） | 结果 |
 |---|---|
-| A：旧参数（容差 2°、没有最小转速） | 走了 4 m 后**卡在第一个弯**：P 控制给出的转速约 0.17 rad/s，低于死区 |
-| B：新参数（容差 5°、最小转速 0.3） | **160 秒到达终点** |
+| A：旧参数（容差 2°、没有最小转速） | 走了 4 m 后**卡在第一个弯**：P 控制给出的转速约 0.22 rad/s，落在死区里 |
+| B：新参数（容差 5°、最小转速 0.3） | **到达终点：10 次转向，225 秒** |
 | C：另有程序一直发零速度 | 车照样往前走，不是"一开始不动"的原因 |
 | D：开局车前就有障碍 | 立刻转弯后卡住，和当天现象不符 |
 
-结论：控制器逻辑没问题；真车"一开始不动"最可能是通信问题（当天 zenoh 路由停过好几次，路由重启前启动的节点连不上车）。
+结论：测试 A、B 说明的是"如果电机有这样的死区会怎样"，所以最小转速是预防措施；死区没有实测过，真车 bag 里也没有这种卡住。测试 C、D 用的是 10/23 的代码。真车"不走"和下面 0.22 m/s 的问题相符，根本原因没有查明。
 
 **Lab04 结果（10/29，3 号机器人）**，现在都已经是 `config/real_robot.yaml` 的默认值：
 

@@ -1,7 +1,7 @@
-"""Simulate the motor dead zone of the real TurtleBot3 in Gazebo.
+"""Simulate a motor dead zone in Gazebo (assumed size, not measured on the real robot).
 
 Controller --/cmd_vel_raw--> [this node] --/cmd_vel--> simulated robot
-Angular velocities smaller than `angular_dead_zone` are set to 0, like a real
+Angular velocities smaller than `angular_dead_zone` are set to 0, like a
 motor that cannot overcome friction at very low speed.
 """
 import rclpy

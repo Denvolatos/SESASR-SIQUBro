@@ -26,7 +26,7 @@ class ControllerConfig:
     goal_y: float = 3.0
     goal_tolerance: float = 0.8        # [m]
     rotation_tolerance_deg: float = 5.0
-    min_angular_vel: float = 0.3       # [rad/s] motor dead zone of the real robot
+    min_angular_vel: float = 0.3       # [rad/s] precaution against a motor dead zone
     turn_angle_deg: float = 90.0       # largest turn after a bump
     snap_to_axes: bool = True          # round the turn to the maze axes (simulation)
     turn_until_clear: bool = False     # stop turning once the front is free (real robot)

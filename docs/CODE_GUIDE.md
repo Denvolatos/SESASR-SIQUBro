@@ -93,7 +93,7 @@ if abs(w) < c.min_angular_vel:                                     # motor dead 
     w = math.copysign(c.min_angular_vel, w)
 ```
 
-`wrap_angle` makes the robot turn 2° (not 358°) from −179° to +179°. The minimum speed is needed on the real robot: near the target the P controller asks for less than the motors can do, and the robot stays stuck in ROTATE.
+`wrap_angle` makes the robot turn 2° (not 358°) from −179° to +179°. The minimum speed is a precaution: near the target the P controller asks for very little, and if the motors had a dead zone the robot would stay stuck in ROTATE. The simulated test in `scripts/deadzone_filter.py` shows this with an assumed dead zone of 0.25 rad/s; it was not measured on the real robot.
 
 `step()` returns `(v, ω)` and sets `self.event` (e.g. `wall at 0.49 m (left 0.79, right 0.23) -> turn left`), which the node prints.
 
@@ -124,7 +124,7 @@ Set in `config/sim.yaml` and `config/real_robot.yaml` (after editing: `colcon bu
 | `stop_at_goal` | true | false | – | Stop near the goal (simulation only) |
 | `goal_x`, `goal_y`, `goal_tolerance` | 6.5, 3.0, 0.8 | – | m | Green cube in the Lab02 maze |
 | `rotation_tolerance_deg` | 5 | 5 | deg | A turn is finished below this yaw error |
-| `min_angular_vel` | 0.3 | 0.3 | rad/s | Motor dead zone |
+| `min_angular_vel` | 0.3 | 0.3 | rad/s | Precaution against a motor dead zone |
 | `turn_angle_deg` | 90 | **45** | deg | Largest turn per bump; in a corner the robot bumps again and turns more |
 | `snap_to_axes` | true | **false** | – | Round the turn to the maze axes |
 | `turn_until_clear` | false | **true** | – | Stop turning as soon as the front is free |
@@ -159,7 +159,7 @@ All figures are saved as **PDF** (vector, for the report) and **PNG** (preview),
 2. Why does the robot stop closer to the wall than `obstacle_threshold`?
 3. Why is the target yaw rounded to multiples of 90° in simulation but not on the real robot?
 4. What does `atan2(sin(e), cos(e))` do, and why is it needed?
-5. Why is a minimum angular velocity needed on the real robot?
+5. Why do we use a minimum angular velocity, and what does the dead-zone test prove (and not prove)?
 6. Why the minimum for the front sector, but the median for the sides on the real robot? Why not in simulation?
 7. Why are `inf` treated as free space and `NaN` ignored?
 8. Why do odometry and ground truth diverge over time? Why is the error larger on the real robot?
@@ -257,7 +257,7 @@ if abs(w) < c.min_angular_vel:                                     # 电机死�
     w = math.copysign(c.min_angular_vel, w)
 ```
 
-`wrap_angle` 让车从 −179° 到 +179° 只转 2°，而不是 358°。最小转速是真车需要的：快转到位时，P 控制给出的转速低于电机能动的最小速度，车会一直卡在 ROTATE。
+`wrap_angle` 让车从 −179° 到 +179° 只转 2°，而不是 358°。最小转速是预防措施：快转到位时，P 控制给出的转速很小，如果电机有死区，车会一直卡在 ROTATE。`scripts/deadzone_filter.py` 的仿真测试用假设的 0.25 rad/s 死区演示了这一点，这个值没有在真车上测过。
 
 `step()` 返回 `(v, ω)`，并把这一步的决定写进 `self.event`（例如 `wall at 0.49 m (left 0.79, right 0.23) -> turn left`），由节点打印出来。
 
@@ -288,7 +288,7 @@ if abs(w) < c.min_angular_vel:                                     # 电机死�
 | `stop_at_goal` | true | false | – | 到目标附近停车（只用于仿真） |
 | `goal_x`、`goal_y`、`goal_tolerance` | 6.5、3.0、0.8 | – | m | Lab02 迷宫绿块 |
 | `rotation_tolerance_deg` | 5 | 5 | deg | 偏航角误差小于它就算转完 |
-| `min_angular_vel` | 0.3 | 0.3 | rad/s | 电机死区 |
+| `min_angular_vel` | 0.3 | 0.3 | rad/s | 预防电机死区 |
 | `turn_angle_deg` | 90 | **45** | deg | 每次最多转多少；墙角里会再触发一次接着转 |
 | `snap_to_axes` | true | **false** | – | 转向角对齐迷宫坐标轴 |
 | `turn_until_clear` | false | **true** | – | 前方一空出来就停止转向 |
@@ -323,7 +323,7 @@ colcon build --symlink-install && colcon test --packages-select lab02_pkg && col
 2. 为什么小车停下的位置比 `obstacle_threshold` 更靠近墙？
 3. 为什么仿真里目标角度要取整到 90° 的倍数，真车上却不取整？
 4. `atan2(sin(e), cos(e))` 做了什么？为什么需要它？
-5. 为什么真车需要最小转速？
+5. 为什么要用最小转速？死区测试能证明什么、不能证明什么？
 6. 为什么前方用最近点，真车的左右却用中位数？仿真里为什么不用？
 7. 为什么 `inf` 当作畅通，`NaN` 却丢弃？
 8. 为什么里程计和真实位置会越差越多？为什么真车上误差更大？
