@@ -1,0 +1,15 @@
+# Gazebo simulation (lab04 world). Used by: ros2 launch lab04_pkg ekf.launch.py
+ekf_node:
+  ros__parameters:
+    use_sim_time: true
+    landmarks_topic: /landmarks
+    init_pose: [-2.0, -0.5, 0.0]   # start pose in lab04.launch.py
+    init_std: [0.1, 0.1, 0.1]
+    prediction_rate: 20.0          # [Hz] required by the lab
+    std_v: 0.05                    # [m/s]
+    std_w: 0.1                     # [rad/s]
+    std_range: 0.05                # [m] larger than the simulated 0.01 m
+    std_bearing_deg: 2.0           # [deg] larger than the simulated 1 deg
+    std_odom_v: 0.01               # [m/s] chosen with scripts/replay_filters.py
+    std_odom_w: 0.02               # [rad/s]
+    std_imu_w: 0.02                # [rad/s]
