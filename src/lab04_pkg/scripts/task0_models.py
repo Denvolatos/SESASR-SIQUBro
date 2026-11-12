@@ -54,23 +54,41 @@ def motion_samples():
 
 
 def landmark_samples():
+    """Forward model p(z|x,m) and inverse model p(x|z,m) of a landmark, with two noise levels."""
     x0, lm, n = np.array([0.0, 0.0, 0.0]), (1.0, 1.0), 1000
-    sigma = (0.05, math.radians(5.0))
-    z = pm.landmark_h(x0, lm)
-    s = np.array([pm.sample_pose_from_landmark(z, lm, sigma, rng) for _ in range(n)])
-    fig, ax = plt.subplots(figsize=(4.8, 4.5))
-    ax.scatter(s[:, 0], s[:, 1], s=4, alpha=0.5, label=f'{n} sampled poses')
-    ax.plot(*lm, 'ks', ms=8, label='landmark')
-    draw_pose(ax, x0, 'true pose')
-    ax.set_title(f'z = [{z[0]:.2f} m, {math.degrees(z[1]):.0f}°], '
-                 f'σ = [{sigma[0]} m, {math.degrees(sigma[1]):.0f}°]', fontsize=9)
-    ax.set_xlabel('x [m]')
-    ax.set_ylabel('y [m]')
-    ax.axis('equal')
-    ax.grid(True)
-    ax.legend(fontsize=8, loc='lower right')
+    z_true = pm.landmark_h(x0, lm)          # real range and bearing from the (unknown) pose
+    cases = {'small noise': (0.05, math.radians(5.0)), 'large noise': (0.2, math.radians(20.0))}
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4.3))
+    for k, (name, sigma) in enumerate(cases.items()):
+        # forward model: noisy measurements z of the landmark seen from x0
+        zs = np.array([pm.sample_landmark_model(x0, lm, sigma, rng) for _ in range(n)])
+        axes[0].scatter(zs[:, 0], np.degrees(zs[:, 1]), s=4, alpha=0.4,
+                        label=f'{name}: σ = [{sigma[0]} m, {math.degrees(sigma[1]):.0f}°]')
+        # inverse model: one candidate pose for each sampled measurement
+        poses = np.array([pm.sample_pose_from_landmark(z, lm, (0.0, 0.0), rng) for z in zs])
+        ax = axes[k + 1]
+        ax.scatter(poses[:, 0], poses[:, 1], s=4, alpha=0.4, label=f'{n} candidate poses')
+        sel = poses[rng.choice(n, 40, replace=False)]
+        ax.quiver(sel[:, 0], sel[:, 1], np.cos(sel[:, 2]), np.sin(sel[:, 2]), color='tab:blue',
+                  scale=25, width=0.004, alpha=0.6)
+        ax.plot(*lm, 'ks', ms=8, label='landmark m')
+        draw_pose(ax, x0, 'true pose (unknown)')
+        ax.set_title(f'Inverse model, {name}: σ = [{sigma[0]} m, {math.degrees(sigma[1]):.0f}°]',
+                     fontsize=9)
+        ax.set_xlabel('x [m]')
+        ax.set_ylabel('y [m]')
+        ax.axis('equal')
+        ax.grid(True)
+        ax.legend(fontsize=7, loc='lower right')
+        r = np.hypot(poses[:, 0] - lm[0], poses[:, 1] - lm[1])
+        print(f'landmark, {name}: range of candidate poses {r.mean():.3f} ± {r.std():.3f} m')
+    axes[0].plot(z_true[0], math.degrees(z_true[1]), 'k+', ms=12, mew=2, label='true z')
+    axes[0].set_title('Forward model: sampled z = [r, φ]', fontsize=9)
+    axes[0].set_xlabel('range r [m]')
+    axes[0].set_ylabel('bearing φ [deg]')
+    axes[0].grid(True)
+    axes[0].legend(fontsize=7)
     save(fig, 'task0_landmark_model')
-    print(f'landmark: radius mean {np.hypot(s[:, 0] - lm[0], s[:, 1] - lm[1]).mean():.3f} m')
 
 
 def jacobians():

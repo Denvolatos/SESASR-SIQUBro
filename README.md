@@ -89,6 +89,15 @@ On the same recorded data, Task 2 reduced the heading error by about 20–30 % b
 
 Tools in `src/lab04_pkg/scripts/` / 工具：`task0_models.py` (Task 0 plots, Jacobians with sympy) · `evaluate_ekf.py` (plots, RMSE, MAE) · `replay_filters.py` (both filters on the same bag) · `run_sim_experiment.sh`.
 
+**Replay a real-robot bag / 回放真车数据**（to try other parameters without a new experiment · 不用重做实验就能换参数试）:
+
+```bash
+ros2 bag play --clock 1000 --remap /ekf:=/old_ekf -- path/to/rosbag
+ros2 launch lab04_pkg ekf.launch.py robot:=real use_sim_time:=true
+```
+
+Record `/camera/landmarks` and `/imu` too on the real robot, otherwise the bag cannot be replayed. / 真车上也要录 `/camera/landmarks` 和 `/imu`，否则无法回放。
+
 **Real robot / 真车：** not run yet; the landmark coordinates of the real arena still have to be set in a landmarks file. / 还没跑；真实场地的地标坐标需要写进地标文件。
 
 ## 3️⃣ R03 — Control and path planning / 控制与路径规划
