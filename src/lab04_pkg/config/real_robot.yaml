@@ -1,0 +1,15 @@
+# Real robot. Used by: ros2 launch lab04_pkg ekf.launch.py robot:=real
+ekf_node:
+  ros__parameters:
+    use_sim_time: false
+    landmarks_topic: /camera/landmarks
+    init_pose: [0.0, 0.0, 0.0]     # set this to where the robot really starts in the arena
+    init_std: [0.3, 0.3, 0.3]      # the start pose is only known roughly
+    prediction_rate: 20.0          # [Hz] required by the lab
+    std_v: 0.05                    # [m/s]
+    std_w: 0.1                     # [rad/s]
+    std_range: 0.1                 # [m] not tuned yet on the robot
+    std_bearing_deg: 3.0           # [deg] not tuned yet on the robot
+    std_odom_v: 0.02               # [m/s]
+    std_odom_w: 0.05               # [rad/s]
+    std_imu_w: 0.02                # [rad/s]
