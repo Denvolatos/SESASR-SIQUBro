@@ -100,6 +100,18 @@ Record `/camera/landmarks` and `/imu` too on the real robot, otherwise the bag c
 
 **Real robot / 真车：** not run yet; the landmark coordinates of the real arena still have to be set in a landmarks file. / 还没跑；真实场地的地标坐标需要写进地标文件。
 
+### Jin's independent Task 1 EKF / Jin 的独立 Task 1 EKF
+
+Guanchen Jin's three-state EKF lives in `src/lab04_pkg/lab04_pkg/jin_ekf.py`, with its own ROS node, launch file and parameters. It uses the same `/odom` and landmark inputs as the group EKF, but publishes `/ekf_jin` by default. This keeps both estimates separate during simulation and bag recording. / Guanchen Jin 的三状态 EKF 有独立的滤波器、ROS 节点、启动文件和参数；默认发布 `/ekf_jin`，可与小组原版 `/ekf` 同时录制比较。
+
+```bash
+ros2 launch lab04_pkg jin_ekf.launch.py                    # simulation / 仿真
+ros2 launch lab04_pkg jin_ekf.launch.py robot:=real        # real robot / 真车
+ros2 bag record /ground_truth /odom /ekf /ekf_jin /landmarks  # simulation comparison / 仿真对比
+```
+
+For a real-robot run where only Jin's filter is active, `output_topic:=/ekf` makes its output compatible with the course topic and the existing evaluation script. Before running on the real robot, set the actual start pose in `config/jin_real.yaml` and verify that the landmark map matches the arena. This implementation currently covers Task 1 and can be used for Task 3; Task 2 sensor fusion remains in the group EKF. / 真车只运行 Jin 版本时，可用 `output_topic:=/ekf` 对接课程话题和现有分析脚本。上车前须核对初始位姿及场地地标坐标。Jin 版本目前实现 Task 1，可用于 Task 3；Task 2 融合仍在小组原版中。
+
 ## 3️⃣ R03 — Control and path planning / 控制与路径规划
 
 Labs on 26/11, 3/12 and 17/12 (Thursday slot). / 实验课：11/26、12/3、12/17（周四场）。

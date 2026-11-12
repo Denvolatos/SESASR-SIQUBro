@@ -1,0 +1,13 @@
+jin_ekf_node:
+  ros__parameters:
+    use_sim_time: true
+    landmarks_topic: /landmarks
+    init_pose: [-2.0, -0.5, 0.0]
+    init_std: [0.1, 0.1, 0.1]
+    prediction_rate: 20.0
+    max_odom_age: 0.5
+    std_v: 0.05
+    std_w: 0.1
+    std_range: 0.05
+    std_bearing_deg: 2.0
+    innovation_gate: 0.0
