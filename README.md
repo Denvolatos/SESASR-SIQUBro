@@ -98,7 +98,7 @@ ros2 launch lab04_pkg ekf.launch.py robot:=real use_sim_time:=true
 
 Record `/camera/landmarks` and `/imu` too on the real robot, otherwise the bag cannot be replayed. / 真车上也要录 `/camera/landmarks` 和 `/imu`，否则无法回放。
 
-**Real robot / 真车：** not run yet; the landmark coordinates of the real arena still have to be set in a landmarks file. / 还没跑；真实场地的地标坐标需要写进地标文件。
+**Real robot / 真车：** not run yet. The landmark coordinates of the arena (10 tags, from the course map of 12 November) are in `config/landmarks_thu1211.yaml`, which `real_robot.yaml` uses. They are in the map frame, so `init_pose` must be the start pose of the robot in that frame. / 还没跑。场地的 10 个地标坐标（课程 11/12 给的地图）在 `config/landmarks_thu1211.yaml`，`real_robot.yaml` 已经指向它。坐标是地图坐标系的，所以 `init_pose` 要填小车在这个坐标系里的出发位置。
 
 ## 3️⃣ R03 — Control and path planning / 控制与路径规划
 
