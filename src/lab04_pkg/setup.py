@@ -29,6 +29,7 @@ setup(
     entry_points={
         'console_scripts': [
             'ekf_node = lab04_pkg.ekf_node:main',
+            'jin_ekf_node = lab04_pkg.jin_ekf_node:main',
         ],
     },
 )
