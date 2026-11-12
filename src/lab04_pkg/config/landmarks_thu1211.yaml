@@ -1,0 +1,6 @@
+# Real arena, Thursday lab of 12 November 2026 (course file map_thu1211/tag_positions.txt).
+# Coordinates in the map frame of that session's map [m]. z is not used by the filter.
+landmarks:
+  id: [0, 1, 2, 4, 5, 6, 7, 9, 10, 14]
+  x: [1.207, 2.975, 4.074, 3.744, 0.922, 2.563, 3.951, 2.209, 4.556, 4.314]
+  y: [0.769, 1.358, 0.579, 0.309, -0.746, 0.421, -0.515, 0.710, 1.251, -0.452]

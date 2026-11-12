@@ -59,7 +59,11 @@ class EkfNode(Node):
             self.declare_parameter(name, value)
         get = lambda name: self.get_parameter(name).value  # noqa: E731
         self.fusion = get('fusion')
-        self.landmarks = load_landmarks(get('landmarks_file'))
+        lm_file = get('landmarks_file')
+        if not os.path.isabs(lm_file):   # a bare file name is looked up in lab04_pkg/config
+            lm_file = os.path.join(get_package_share_directory('lab04_pkg'), 'config', lm_file)
+        self.landmarks = load_landmarks(lm_file)
+        self.get_logger().info(f'{len(self.landmarks)} landmarks from {lm_file}')
         self.map_frame, self.base_frame = get('map_frame'), get('base_frame')
 
         self.M = np.diag([get('std_v')**2, get('std_w')**2])

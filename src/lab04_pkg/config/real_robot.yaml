@@ -3,7 +3,10 @@ ekf_node:
   ros__parameters:
     use_sim_time: false
     landmarks_topic: /camera/landmarks
-    init_pose: [0.0, 0.0, 0.0]     # set this to where the robot really starts in the arena
+    landmarks_file: landmarks_thu1211.yaml   # in lab04_pkg/config; an absolute path also works
+    # The landmarks are in the map frame, so the start pose must be given in that frame too:
+    # measure where the robot is placed in the arena before each run.
+    init_pose: [0.0, 0.0, 0.0]     # [m, m, rad] in the map frame
     init_std: [0.3, 0.3, 0.3]      # the start pose is only known roughly
     prediction_rate: 20.0          # [Hz] required by the lab
     std_v: 0.05                    # [m/s]
