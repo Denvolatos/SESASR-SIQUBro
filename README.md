@@ -98,6 +98,14 @@ ros2 launch lab04_pkg ekf.launch.py robot:=real use_sim_time:=true
 
 Record `/camera/landmarks` and `/imu` too on the real robot, otherwise the bag cannot be replayed. / 真车上也要录 `/camera/landmarks` 和 `/imu`，否则无法回放。
 
+**On the robot / 在车上**, after the four robot launches (zenoh router, bringup, camera, apriltag): / 先启动车上的四个程序（zenoh 路由器、bringup、摄像头、apriltag），再运行：
+
+```bash
+LANDMARKS=$HOME/tag_positions.txt bash src/lab04_pkg/scripts/robot_task3.sh run1 X Y THETA
+```
+
+It checks the robot topics, builds the package, starts the EKF with the landmarks of the day and records a bag in `~/g203_bags/`; Ctrl+C stops everything cleanly. If the EKF does not start, the raw topics are still recorded. / 脚本检查车上的话题、编译、用当天的地标启动 EKF，并把 bag 录到 `~/g203_bags/`；Ctrl+C 一次全部正常停止。EKF 起不来时照样录原始数据。
+
 **Real robot / 真车：** not run yet. The landmark coordinates of the arena (10 tags, from the course map of 12 November) are in `config/landmarks_thu1211.yaml`, which `real_robot.yaml` uses. They are in the map frame, so `init_pose` must be the start pose of the robot in that frame. / 还没跑。场地的 10 个地标坐标（课程 11/12 给的地图）在 `config/landmarks_thu1211.yaml`，`real_robot.yaml` 已经指向它。坐标是地图坐标系的，所以 `init_pose` 要填小车在这个坐标系里的出发位置。
 
 ## 3️⃣ R03 — Control and path planning / 控制与路径规划
