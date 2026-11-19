@@ -8,7 +8,7 @@
 | Report / 报告 | Topic / 内容 | Labs (course schedule) / 实验（课表编号） | Package / 包 | Deadline / 截止 | Status / 状态 |
 |---|---|---|---|---|---|
 | **R01** | Bump&Go controller · Bump&Go 控制器 | Lab 2–4 | [`lab02_pkg`](src/lab02_pkg) | 2026-11-09 | ✅ Submitted · 已提交 |
-| **R02** | EKF localization with landmarks · 基于地标的 EKF 定位 | Lab 5–7 (lab guide "Lab 04-05-06") | [`lab04_pkg`](src/lab04_pkg) | 2026-11-30 | 🟡 Simulation done, real robot in progress · 仿真完成，真车进行中 |
+| **R02** | EKF localization with landmarks · 基于地标的 EKF 定位 | Lab 5–7 (lab guide "Lab 04-05-06") | [`lab04_pkg`](src/lab04_pkg) | 2026-11-30 | 🟡 Experiments done (simulation + real robot), report in progress · 实验完成（仿真 + 真车），报告撰写中 |
 | **R03** | Control and path planning · 控制与路径规划 | Lab 8–10 | — | 2027-01-08 | ⏳ Not started · 未开始 |
 
 > The package names follow the lab guides (`lab02_pkg` is required by the Lab02 guide; `lab04_pkg` follows the EKF guide "Lab 04-05-06"). / 包名沿用实验指导的编号：`lab02_pkg` 是 Lab02 指导要求的名字，`lab04_pkg` 对应 EKF 指导"Lab 04-05-06"。
@@ -81,7 +81,7 @@ Simulation, 150 s runs, Bump&Go moving the robot (position RMSE against the grou
 | Task 1 | 0.018 m | 0.010 m |
 | Task 2 | 0.020 m | 0.010 m |
 
-On the same recorded data, Task 2 reduced the heading error by about 20–30 % but did not improve the position. These numbers come from one simulated run each. / 在同一份数据上回放时，Task 2 的航向误差小约 20–30%，位置没有改善。以上数字各来自一次仿真运行。
+On the same recorded data, Task 2 reduced the heading error by about 20–30 % but did not improve the position. These numbers come from one simulated run each; the course metrics tool gives the same values (within 0.5 mm). / 在同一份数据上回放时，Task 2 的航向误差小约 20–30%，位置没有改善。以上数字各来自一次仿真运行；用课程提供的指标工具算出的结果相同（差 < 0.5 mm）。
 
 | Trajectory / 轨迹 | Task 0: velocity motion model samples / 运动模型采样 |
 |---|---|
@@ -106,7 +106,12 @@ LANDMARKS=$HOME/tag_positions.txt bash src/lab04_pkg/scripts/robot_task3.sh run1
 
 It checks the robot topics, builds the package, starts the EKF with the landmarks of the day and records a bag in `~/g203_bags/`; Ctrl+C stops everything cleanly. If the EKF does not start, the raw topics are still recorded. / 脚本检查车上的话题、编译、用当天的地标启动 EKF，并把 bag 录到 `~/g203_bags/`；Ctrl+C 一次全部正常停止。EKF 起不来时照样录原始数据。
 
-**Real robot / 真车：** not run yet. The landmark coordinates of the arena (10 tags, from the course map of 12 November) are in `config/landmarks_thu1211.yaml`, which `real_robot.yaml` uses. They are in the map frame, so `init_pose` must be the start pose of the robot in that frame. / 还没跑。场地的 10 个地标坐标（课程 11/12 给的地图）在 `config/landmarks_thu1211.yaml`，`real_robot.yaml` 已经指向它。坐标是地图坐标系的，所以 `init_pose` 要填小车在这个坐标系里的出发位置。
+**Real robot / 真车（19 Nov 2026, robot 3）：** the robot started at the map origin, the cross on the floor (0, 0, 0). With the Task 2 filter, a 172 s drive around the obstacles saw 7 of the 9 tags, and at the end `/ekf` and `/odom` were 0.28 m apart. There is no ground truth on the real robot, so this only shows that the two estimates agree with each other and with the tag measurements, not how accurate they are. / 小车从地图原点（地上的十字，(0, 0, 0)）出发。用 Task 2 滤波器绕障碍物开了 172 秒，9 个地标看到 7 个，结束时 `/ekf` 与 `/odom` 相差 0.28 m。真车没有真实位置可比，所以这只说明两者彼此一致、并与地标观测相符，不代表绝对精度。
+
+Things we learned on the robot / 真车上的经验：
+- The tags are moved for every lab session: use the `tag_positions.txt` of the day (`LANDMARKS=...`). `config/landmarks_thu1211.yaml` is only the arena of 12 Nov. / 每次实验课地标位置都不同，要用当天的 `tag_positions.txt`；`config/landmarks_thu1211.yaml` 只是 11/12 的场地。
+- With a wrong start pose and only one tag in view, the position has two solutions: in one run the filter first settled on the wrong one and jumped to the right one 44 s later, when more tags came into view. Start where the camera sees two or more tags. / 起点填错、又只看得到一个地标时，位置有两个解：有一次滤波器先停在错误的解上，44 秒后看到更多地标才跳回正确位置。起步时最好能看到两个以上地标。
+- The robot PC has no internet: copy the code to it (`scp`) instead of `git clone`. Changing the battery restarts the whole robot, so all four launches have to be started again. / 车上的电脑不能上网，代码要用 `scp` 拷过去；换电池会让整台车重启，四个程序都要重开。
 
 ## 3️⃣ R03 — Control and path planning / 控制与路径规划
 
