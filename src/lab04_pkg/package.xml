@@ -16,7 +16,6 @@
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>landmark_msgs</exec_depend>
   <exec_depend>turtlebot3_perception</exec_depend>
-  <exec_depend>tf_transformations</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
 

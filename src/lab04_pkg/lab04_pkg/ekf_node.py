@@ -18,7 +18,6 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.signals import SignalHandlerOptions
 from sensor_msgs.msg import Imu
-import tf_transformations
 import yaml
 
 from lab04_pkg import probabilistic_models as pm
@@ -156,9 +155,9 @@ class EkfNode(Node):
         msg.child_frame_id = self.base_frame
         msg.pose.pose.position.x = float(mu[0])
         msg.pose.pose.position.y = float(mu[1])
-        q = tf_transformations.quaternion_from_euler(0.0, 0.0, float(mu[2]))
-        msg.pose.pose.orientation.x, msg.pose.pose.orientation.y = q[0], q[1]
-        msg.pose.pose.orientation.z, msg.pose.pose.orientation.w = q[2], q[3]
+        # yaw-only quaternion; written out so the node does not need tf_transformations
+        msg.pose.pose.orientation.z = math.sin(float(mu[2]) / 2.0)
+        msg.pose.pose.orientation.w = math.cos(float(mu[2]) / 2.0)
         cov = [0.0] * 36   # order x, y, z, roll, pitch, yaw
         for a, i in ((0, 0), (1, 1), (2, 5)):
             for b, j in ((0, 0), (1, 1), (2, 5)):
