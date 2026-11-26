@@ -152,7 +152,14 @@ Tools in `src/lab07_pkg/scripts/`: `evaluate_nav.py` (success rate, time, path l
 
 ## 👥 Team
 
-Group 203 (SIQUBro): Chen, [Jin](https://github.com/Galio1991), Qu, Ye.
+Group 203 (SIQUBro):
+
+| Member | Hometown |
+|---|---|
+| Chen | — |
+| [Jin](https://github.com/Galio1991) | Jianyang, Chengdu (Sichuan) |
+| Qu | Qingdao (Shandong) |
+| Ye | Wenzhou (Zhejiang) |
 
 ## 📜 License and code sources
 
