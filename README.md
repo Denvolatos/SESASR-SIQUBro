@@ -163,9 +163,9 @@ Parts of the code are adapted from course material released under GPL-3.0: / 部
 **EN**
 - **[DET – Department of Electronics and Telecommunications](https://www.det.polito.it/)**, Politecnico di Torino, and **[PIC4SeR – PoliTO Interdepartmental Centre for Service Robotics](https://pic4ser.polito.it/)**, for the SESASR course, the lab sessions and the TurtleBot3 robots.
 - The SESASR course staff for the lab material and the simulation package [`SESASR-Course/turtlebot3_simulations`](https://github.com/SESASR-Course/turtlebot3_simulations).
-- **[Claude Code](https://claude.com/claude-code)** (Anthropic's AI coding assistant), which helped with explanations, code review and writing the documentation, and **Google Antigravity** (Gemini), which helped write the R03 code. All group members have read, run and tested the code and are responsible for it.
+- **[Claude Code](https://claude.com/claude-code)** (Anthropic's AI coding assistant), which helped with explanations, code review and writing the documentation, and **[Google Antigravity](https://antigravity.google/)** (Gemini), which helped write the R03 code. All group members have read, run and tested the code and are responsible for it.
 
 **中文**
 - 感谢都灵理工大学 **[DET 电子与电信系](https://www.det.polito.it/)** 和 **[PIC4SeR 服务机器人跨系研究中心](https://pic4ser.polito.it/)** 提供 SESASR 课程、实验课和 TurtleBot3 机器人。
 - 感谢 SESASR 课程团队提供实验资料和仿真包 [`SESASR-Course/turtlebot3_simulations`](https://github.com/SESASR-Course/turtlebot3_simulations)。
-- 感谢 **[Claude Code](https://claude.com/claude-code)**（Anthropic 推出的 AI 编程助手）在讲解原理、检查代码和编写文档方面提供的帮助，以及 **Google Antigravity**（Gemini）在编写 R03 代码方面提供的帮助。小组成员都阅读、运行并测试过代码，并对代码负责。
+- 感谢 **[Claude Code](https://claude.com/claude-code)**（Anthropic 推出的 AI 编程助手）在讲解原理、检查代码和编写文档方面提供的帮助，以及 **[Google Antigravity](https://antigravity.google/)**（Gemini）在编写 R03 代码方面提供的帮助。小组成员都阅读、运行并测试过代码，并对代码负责。
