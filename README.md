@@ -67,23 +67,28 @@ Final code in the Lab02 maze: goal reached after 10 turns in 220 s; odometry err
 
 ## 2️⃣ R02 — EKF localization
 
-An extended Kalman filter estimates the robot pose. It predicts at 20 Hz with the velocity motion model, using v and ω from `/odom`, and corrects the estimate with the range and bearing of each landmark it sees. With `fusion:=true` the state also contains v and ω, which are corrected by `/odom` and `/imu`. The result is published on `/ekf`.
+An extended Kalman filter estimates the robot pose: it predicts at 20 Hz with the velocity motion model (v, ω from `/odom`) and corrects with the range and bearing of each landmark it sees. With `fusion:=true` the state also contains v and ω, corrected by `/odom` and `/imu`.
 
 ```bash
-ros2 launch turtlebot3_ignition lab04.launch.py      # simulation world (Mac: ignition)
+ros2 launch turtlebot3_ignition lab04.launch.py      # simulation world
 ros2 launch lab04_pkg ekf.launch.py                  # Task 1: state [x, y, θ]
 ros2 launch lab04_pkg ekf.launch.py fusion:=true     # Task 2: state [x, y, θ, v, ω]
-ros2 launch lab04_pkg ekf.launch.py robot:=real      # Task 3: real robot, landmarks on /camera/landmarks
+ros2 launch lab04_pkg ekf.launch.py robot:=real      # Task 3: real robot
 ```
 
-Simulation, 150 s runs, Bump&Go moving the robot (position RMSE against the ground truth):
-
-| Run | `/odom` | `/ekf` |
+| Simulation, position RMSE vs ground truth | `/odom` | `/ekf` |
 |---|---|---|
 | Task 1 | 0.018 m | 0.010 m |
 | Task 2 | 0.020 m | 0.010 m |
 
-On the same recorded data, Task 2 reduced the heading error by about 20–30 % but did not improve the position. These numbers come from one simulated run each; the course metrics tool gives the same values (within 0.5 mm).
+On the real robot (19 Nov, robot 3) a 172 s drive saw 7 of the 9 tags, and `/ekf` and `/odom` ended 0.28 m apart.
+
+<details>
+<summary><b>More: plots, tools, running on the robot, lessons learned</b></summary>
+
+<br>
+
+Each number above comes from one 150 s simulated run with Bump&Go moving the robot; the course metrics tool gives the same values (within 0.5 mm). On the same recorded data, Task 2 reduced the heading error by about 20–30 % but did not improve the position.
 
 | Trajectory | Task 0: velocity motion model samples |
 |---|---|
@@ -91,49 +96,59 @@ On the same recorded data, Task 2 reduced the heading error by about 20–30 % b
 
 Tools in `src/lab04_pkg/scripts/`: `task0_models.py` (Task 0 plots, Jacobians with sympy) · `evaluate_ekf.py` (plots, RMSE, MAE) · `replay_filters.py` (both filters on the same bag) · `run_sim_experiment.sh`.
 
-**Replay a real-robot bag** (to try other parameters without a new experiment):
-
-```bash
-ros2 bag play --clock 1000 --remap /ekf:=/old_ekf -- path/to/rosbag
-ros2 launch lab04_pkg ekf.launch.py robot:=real use_sim_time:=true
-```
-
-Record `/camera/landmarks` and `/imu` too on the real robot, otherwise the bag cannot be replayed.
-
 **On the robot**, after the four robot launches (zenoh router, bringup, camera, apriltag):
 
 ```bash
 LANDMARKS=$HOME/tag_positions.txt bash src/lab04_pkg/scripts/robot_task3.sh run1 X Y THETA
 ```
 
-It checks the robot topics, builds the package, starts the EKF with the landmarks of the day and records a bag in `~/g203_bags/`; Ctrl+C stops everything cleanly. If the EKF does not start, the raw topics are still recorded.
+The script checks the topics, builds the package, starts the EKF with the landmarks of the day and records a bag; Ctrl+C stops everything cleanly. If the EKF does not start, the raw topics are still recorded.
 
-**Real robot (19 Nov 2026, robot 3):** the robot started at the map origin, the cross on the floor (0, 0, 0). With the Task 2 filter, a 172 s drive around the obstacles saw 7 of the 9 tags, and at the end `/ekf` and `/odom` were 0.28 m apart. There is no ground truth on the real robot, so this only shows that the two estimates agree with each other and with the tag measurements, not how accurate they are.
+**Replay a real-robot bag** (record `/camera/landmarks` and `/imu` too):
 
-Things we learned on the robot:
-- The tags are moved for every lab session: use the `tag_positions.txt` of the day (`LANDMARKS=...`). `config/landmarks_thu1211.yaml` is only the arena of 12 Nov.
-- With a wrong start pose and only one tag in view, the position has two solutions: in one run the filter first settled on the wrong one and jumped to the right one 44 s later, when more tags came into view. Start where the camera sees two or more tags.
-- The robot PC has no internet: copy the code to it (`scp`) instead of `git clone`. Changing the battery restarts the whole robot, so all four launches have to be started again.
+```bash
+ros2 bag play --clock 1000 --remap /ekf:=/old_ekf -- path/to/rosbag
+ros2 launch lab04_pkg ekf.launch.py robot:=real use_sim_time:=true
+```
+
+There is no ground truth on the real robot, so the 0.28 m only shows that the two estimates agree with each other and with the tags, not how accurate they are. Lessons learned:
+- The tags are moved for every lab session: use the `tag_positions.txt` of the day.
+- With a wrong start pose and only one tag in view, the position has two solutions: start where the camera sees two or more tags.
+- The robot PC has no internet: copy the code with `scp`. Changing the battery restarts the robot, so all four launches must be started again.
+
+</details>
 
 ## 3️⃣ R03 — DWA obstacle avoidance and target following
 
-A Dynamic Window Approach controller runs at 15 Hz. It samples (v, ω) inside the dynamic window, simulates each trajectory for 1.5 s and scores it with J = α·heading + β·vel + γ·dist_obst; trajectories that would come too close to an obstacle are removed first. Obstacles come only from the LiDAR, reduced to 24 sectors (NaN, Inf and zero readings are handled, single-ray spikes are removed with a 3-point median). An independent laser safety stop ends the run with `Collision`. For Task 2 (following a moving target) the score also has vel′ (slow down near the target) and dist_target (keep about 0.8 m and the target in the camera view). Results are published on `/nav_result` (`Goal`, `Collision`, `Timeout`, `Lost`).
+A Dynamic Window Approach controller at 15 Hz scores the sampled (v, ω) trajectories with J = α·heading + β·vel + γ·dist_obst, using only the LiDAR to see obstacles. Task 2 adds vel′ and dist_target to follow a moving target at about 0.8 m. Results go to `/nav_result` (`Goal`, `Collision`, `Timeout`, `Lost`).
 
 ```bash
 ros2 launch turtlebot3_ignition project.launch.py           # simulation world
 ros2 launch lab07_pkg dwa.launch.py                         # Task 1: static goal on /goal_pose
-ros2 launch lab07_pkg dwa.launch.py mode:=follow            # Task 2: follow /dynamic_goal_pose
-ros2 launch lab07_pkg dwa.launch.py robot:=real             # Task 3: real robot, static goal
-ros2 launch lab07_pkg dwa.launch.py robot:=real mode:=follow target_id:=N   # Task 3: follow AprilTag N
+ros2 launch lab07_pkg dwa.launch.py mode:=follow            # Task 2: follow the moving target
+ros2 launch lab07_pkg dwa.launch.py robot:=real [mode:=follow target_id:=N]   # Task 3: real robot
 ```
+
+| Simulation (course world `hard_maze.world`) | Result |
+|---|---|
+| Task 1: 8 goals × 3 runs | 24 / 24 reached, no collision |
+| Task 2: course trajectory of the red cube | 3 / 3 runs followed the whole first lap, no collision |
+
+<details>
+<summary><b>More: how it works, limits, tools</b></summary>
+
+<br>
+
+- **Scan:** reduced to 24 sectors; NaN, Inf and zero readings are handled and single-ray spikes are removed with a 3-point median.
+- **Safety:** trajectories that come too close to an obstacle are removed before scoring, and an independent laser safety stop ends the run with `Collision`.
+- **Following:** the heading aims at the points the target has passed; if the robot is stuck for 2 s it switches to a recovery mode that only rewards progress.
+- **Limits:** four goals behind the central walls end in `Timeout` (local minimum, a known limit of DWA). The red cube cuts a corner 0.115 m from a wall, so the robot falls behind there (up to 3.5–4.9 m) and then catches up; mean distance over the lap 2.0–2.8 m.
 
 Send a goal: `ros2 topic pub --once /goal_pose geometry_msgs/msg/PoseStamped "{header: {frame_id: odom}, pose: {position: {x: 1.5, y: -0.5}}}"`
 
-Simulation (course world `hard_maze.world`, robot starting at the origin):
-- **Task 1:** 8 goals × 3 runs: 24 / 24 reached, no collision. Four other goals behind the central walls end in `Timeout`: the robot is caught in a local minimum, a known limit of DWA.
-- **Task 2:** on the course trajectory of the red cube, 3 / 3 runs followed the whole first lap (about 21 m) with no collision. The cube cuts a corner 0.115 m from a wall, so the robot falls behind there (up to 3.5–4.9 m) and then catches up; mean distance over the lap 2.0–2.8 m.
+Tools in `src/lab07_pkg/scripts/`: `evaluate_nav.py` (success rate, time, path length, obstacle distance, plots from a bag) · `run_goal_trials.sh` + `run_single_trial.py` (repeated Gazebo trials) · `offline_sim.py` (quick pure-Python tests, not a replacement for Gazebo).
 
-Tools in `src/lab07_pkg/scripts/`: `evaluate_nav.py` (success rate, time, path length, obstacle distance, velocity and trajectory plots from a bag) · `run_goal_trials.sh` + `run_single_trial.py` (repeated Gazebo trials) · `offline_sim.py` (pure-Python simulation for quick tests, not a replacement for Gazebo).
+</details>
 
 ## 👥 Meet the SIQUBro crew
 

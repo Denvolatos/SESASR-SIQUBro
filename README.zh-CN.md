@@ -67,23 +67,28 @@ ros2 launch lab02_pkg bump_and_go.launch.py robot:=real  # 真车
 
 ## 2️⃣ R02 — EKF 定位
 
-用扩展卡尔曼滤波估计小车位姿：以 20 Hz 用速度运动模型预测（v、ω 取自 `/odom`），每看到一个地标就用它的距离和方位修正。`fusion:=true` 时状态里还包括 v、ω，由 `/odom` 和 `/imu` 修正。结果发布在 `/ekf`。
+用扩展卡尔曼滤波估计小车位姿：以 20 Hz 用速度运动模型预测（v、ω 取自 `/odom`），每看到一个地标就用它的距离和方位修正。`fusion:=true` 时状态里还包括 v、ω，由 `/odom` 和 `/imu` 修正。
 
 ```bash
-ros2 launch turtlebot3_ignition lab04.launch.py      # 仿真场景（Mac：ignition）
+ros2 launch turtlebot3_ignition lab04.launch.py      # 仿真场景
 ros2 launch lab04_pkg ekf.launch.py                  # Task 1：状态 [x, y, θ]
 ros2 launch lab04_pkg ekf.launch.py fusion:=true     # Task 2：状态 [x, y, θ, v, ω]
-ros2 launch lab04_pkg ekf.launch.py robot:=real      # Task 3：真车，地标来自 /camera/landmarks
+ros2 launch lab04_pkg ekf.launch.py robot:=real      # Task 3：真车
 ```
 
-仿真，每次 150 秒，用 Bump&Go 让车动（相对真实位置的位置 RMSE）：
-
-| 实验 | `/odom` | `/ekf` |
+| 仿真，相对真实位置的位置 RMSE | `/odom` | `/ekf` |
 |---|---|---|
 | Task 1 | 0.018 m | 0.010 m |
 | Task 2 | 0.020 m | 0.010 m |
 
-在同一份数据上回放时，Task 2 的航向误差小约 20–30%，位置没有改善。以上数字各来自一次仿真运行；用课程提供的指标工具算出的结果相同（差 < 0.5 mm）。
+真车（11/19，3 号车）开了 172 秒，9 个地标看到 7 个，结束时 `/ekf` 与 `/odom` 相差 0.28 m。
+
+<details>
+<summary><b>展开：图、工具、在车上运行、真车经验</b></summary>
+
+<br>
+
+上表每个数字来自一次 150 秒的仿真（用 Bump&Go 让车动）；课程的指标工具算出的结果相同（差 < 0.5 mm）。在同一份数据上回放时，Task 2 的航向误差小约 20–30%，位置没有改善。
 
 | 轨迹 | Task 0：速度运动模型采样 |
 |---|---|
@@ -91,49 +96,59 @@ ros2 launch lab04_pkg ekf.launch.py robot:=real      # Task 3：真车，地标�
 
 `src/lab04_pkg/scripts/` 里的工具：`task0_models.py`（Task 0 的图，用 sympy 推雅可比）· `evaluate_ekf.py`（画图、RMSE、MAE）· `replay_filters.py`（两种滤波器跑同一份 bag）· `run_sim_experiment.sh`。
 
-**回放真车数据**（不用重做实验就能换参数试）：
-
-```bash
-ros2 bag play --clock 1000 --remap /ekf:=/old_ekf -- path/to/rosbag
-ros2 launch lab04_pkg ekf.launch.py robot:=real use_sim_time:=true
-```
-
-真车上也要录 `/camera/landmarks` 和 `/imu`，否则无法回放。
-
 **在车上**，先启动车上的四个程序（zenoh 路由器、bringup、摄像头、apriltag），再运行：
 
 ```bash
 LANDMARKS=$HOME/tag_positions.txt bash src/lab04_pkg/scripts/robot_task3.sh run1 X Y THETA
 ```
 
-脚本检查车上的话题、编译、用当天的地标启动 EKF，并把 bag 录到 `~/g203_bags/`；Ctrl+C 一次全部正常停止。EKF 起不来时照样录原始数据。
+脚本检查话题、编译、用当天的地标启动 EKF 并录 bag；Ctrl+C 一次全部正常停止。EKF 起不来时照样录原始数据。
 
-**真车（2026-11-19，3 号车）：** 小车从地图原点（地上的十字，(0, 0, 0)）出发。用 Task 2 滤波器绕障碍物开了 172 秒，9 个地标看到 7 个，结束时 `/ekf` 与 `/odom` 相差 0.28 m。真车没有真实位置可比，所以这只说明两者彼此一致、并与地标观测相符，不代表绝对精度。
+**回放真车数据**（真车上也要录 `/camera/landmarks` 和 `/imu`）：
 
-真车上的经验：
-- 每次实验课地标位置都不同，要用当天的 `tag_positions.txt`（`LANDMARKS=...`）；`config/landmarks_thu1211.yaml` 只是 11/12 的场地。
-- 起点填错、又只看得到一个地标时，位置有两个解：有一次滤波器先停在错误的解上，44 秒后看到更多地标才跳回正确位置。起步时最好能看到两个以上地标。
-- 车上的电脑不能上网，代码要用 `scp` 拷过去，不能 `git clone`；换电池会让整台车重启，四个程序都要重开。
+```bash
+ros2 bag play --clock 1000 --remap /ekf:=/old_ekf -- path/to/rosbag
+ros2 launch lab04_pkg ekf.launch.py robot:=real use_sim_time:=true
+```
+
+真车没有真实位置可比，0.28 m 只说明两者彼此一致、并与地标观测相符，不代表绝对精度。真车上的经验：
+- 每次实验课地标位置都不同，要用当天的 `tag_positions.txt`。
+- 起点填错、又只看得到一个地标时，位置有两个解：起步时最好能看到两个以上地标。
+- 车上的电脑不能上网，代码用 `scp` 拷过去；换电池会让整台车重启，四个程序都要重开。
+
+</details>
 
 ## 3️⃣ R03 — DWA 避障与目标跟随
 
-DWA 控制器以 15 Hz 运行：在动态窗口里采样 (v, ω)，每条轨迹向前模拟 1.5 秒，用 J = α·heading + β·vel + γ·dist_obst 打分；离障碍太近的轨迹先剔除。障碍只来自激光雷达，压缩成 24 个扇区（处理 NaN、Inf 和 0，三点中值滤掉单条射线的毛刺）。另有一个独立的激光急停，触发时结果为 `Collision`。Task 2（跟随移动目标）在打分里加上 vel′（接近目标时减速）和 dist_target（保持约 0.8 m、目标在摄像头视野里）。结果发布在 `/nav_result`（`Goal`、`Collision`、`Timeout`、`Lost`）。
+DWA 控制器以 15 Hz 运行，用 J = α·heading + β·vel + γ·dist_obst 给采样的 (v, ω) 轨迹打分，障碍只靠激光雷达。Task 2 再加上 vel′ 和 dist_target，在约 0.8 m 处跟随移动目标。结果发布在 `/nav_result`（`Goal`、`Collision`、`Timeout`、`Lost`）。
 
 ```bash
 ros2 launch turtlebot3_ignition project.launch.py           # 仿真场景
 ros2 launch lab07_pkg dwa.launch.py                         # Task 1：静态目标，发到 /goal_pose
-ros2 launch lab07_pkg dwa.launch.py mode:=follow            # Task 2：跟随 /dynamic_goal_pose
-ros2 launch lab07_pkg dwa.launch.py robot:=real             # Task 3：真车，静态目标
-ros2 launch lab07_pkg dwa.launch.py robot:=real mode:=follow target_id:=N   # Task 3：跟随 N 号 AprilTag
+ros2 launch lab07_pkg dwa.launch.py mode:=follow            # Task 2：跟随移动目标
+ros2 launch lab07_pkg dwa.launch.py robot:=real [mode:=follow target_id:=N]   # Task 3：真车
 ```
+
+| 仿真（课程地图 `hard_maze.world`） | 结果 |
+|---|---|
+| Task 1：8 个目标各 3 次 | 24 / 24 到达，无碰撞 |
+| Task 2：课程给定的红色方块路线 | 3 / 3 次跟完第一圈，无碰撞 |
+
+<details>
+<summary><b>展开：工作原理、局限、工具</b></summary>
+
+<br>
+
+- **激光：** 压缩成 24 个扇区；处理 NaN、Inf 和 0，三点中值滤掉单条射线的毛刺。
+- **安全：** 离障碍太近的轨迹在打分前就剔除；另有一个独立的激光急停，触发时结果为 `Collision`。
+- **跟随：** 朝向瞄准目标走过的位置；车连续 2 秒卡住时进入恢复模式，只看能不能往前推进。
+- **局限：** 中间墙后面的 4 个目标会 `Timeout`（局部极小，DWA 已知的局限）。红色方块在离墙 0.115 m 处切过墙角，车在那里会落后（最多 3.5–4.9 m），之后再追上；整圈平均距离 2.0–2.8 m。
 
 发目标：`ros2 topic pub --once /goal_pose geometry_msgs/msg/PoseStamped "{header: {frame_id: odom}, pose: {position: {x: 1.5, y: -0.5}}}"`
 
-仿真（课程地图 `hard_maze.world`，车从原点出发）：
-- **Task 1：** 8 个目标各 3 次：24 / 24 到达，无碰撞。另有 4 个在中间墙后面的目标会 `Timeout`：车陷入局部极小，这是 DWA 已知的局限。
-- **Task 2：** 在课程给定的红色方块路线上，3 / 3 次跟完第一圈（约 21 m），无碰撞。方块在离墙 0.115 m 处切过墙角，车在那里会落后（最多 3.5–4.9 m），之后再追上；整圈平均距离 2.0–2.8 m。
+`src/lab07_pkg/scripts/` 里的工具：`evaluate_nav.py`（从 bag 算成功率、用时、路径长度、离障碍距离并画图）· `run_goal_trials.sh` + `run_single_trial.py`（在 Gazebo 里重复试验）· `offline_sim.py`（纯 Python 快速测试，不能代替 Gazebo）。
 
-`src/lab07_pkg/scripts/` 里的工具：`evaluate_nav.py`（从 bag 算成功率、用时、路径长度、离障碍距离，画速度曲线和轨迹）· `run_goal_trials.sh` + `run_single_trial.py`（在 Gazebo 里重复试验）· `offline_sim.py`（纯 Python 仿真，只用于快速测试，不能代替 Gazebo）。
+</details>
 
 ## 👥 认识一下 SIQUBro 小分队
 

@@ -67,23 +67,28 @@ Codice finale nel labirinto del Lab02: arrivo dopo 10 svolte in 220 s; errore de
 
 ## 2️⃣ R02 — Localizzazione con EKF
 
-Un filtro di Kalman esteso stima la posa del robot. Esegue la predizione a 20 Hz con il modello di moto a velocità, usando v e ω da `/odom`, e corregge la stima con distanza e angolo di ogni landmark visto. Con `fusion:=true` lo stato contiene anche v e ω, corretti da `/odom` e `/imu`. Il risultato è pubblicato su `/ekf`.
+Un filtro di Kalman esteso stima la posa del robot: esegue la predizione a 20 Hz con il modello di moto a velocità (v, ω da `/odom`) e corregge con distanza e angolo di ogni landmark visto. Con `fusion:=true` lo stato contiene anche v e ω, corretti da `/odom` e `/imu`.
 
 ```bash
-ros2 launch turtlebot3_ignition lab04.launch.py      # mondo di simulazione (Mac: ignition)
+ros2 launch turtlebot3_ignition lab04.launch.py      # mondo di simulazione
 ros2 launch lab04_pkg ekf.launch.py                  # Task 1: stato [x, y, θ]
 ros2 launch lab04_pkg ekf.launch.py fusion:=true     # Task 2: stato [x, y, θ, v, ω]
-ros2 launch lab04_pkg ekf.launch.py robot:=real      # Task 3: robot reale, landmark su /camera/landmarks
+ros2 launch lab04_pkg ekf.launch.py robot:=real      # Task 3: robot reale
 ```
 
-Simulazione, prove da 150 s con il Bump&Go che muove il robot (RMSE di posizione rispetto alla posizione reale):
-
-| Prova | `/odom` | `/ekf` |
+| Simulazione, RMSE di posizione rispetto alla posizione reale | `/odom` | `/ekf` |
 |---|---|---|
 | Task 1 | 0,018 m | 0,010 m |
 | Task 2 | 0,020 m | 0,010 m |
 
-Sugli stessi dati registrati, il Task 2 ha ridotto l'errore di orientamento di circa il 20–30 %, ma non ha migliorato la posizione. Ogni numero viene da una sola prova in simulazione; lo strumento di metriche del corso dà gli stessi valori (entro 0,5 mm).
+Sul robot reale (19/11, robot 3) un giro di 172 s ha visto 7 dei 9 tag, e alla fine `/ekf` e `/odom` distavano 0,28 m.
+
+<details>
+<summary><b>Altro: grafici, strumenti, uso sul robot, cosa abbiamo imparato</b></summary>
+
+<br>
+
+Ogni numero qui sopra viene da una sola prova in simulazione di 150 s, con il Bump&Go che muove il robot; lo strumento di metriche del corso dà gli stessi valori (entro 0,5 mm). Sugli stessi dati registrati, il Task 2 ha ridotto l'errore di orientamento di circa il 20–30 %, ma non ha migliorato la posizione.
 
 | Traiettoria | Task 0: campioni del modello di moto a velocità |
 |---|---|
@@ -91,49 +96,59 @@ Sugli stessi dati registrati, il Task 2 ha ridotto l'errore di orientamento di c
 
 Strumenti in `src/lab04_pkg/scripts/`: `task0_models.py` (grafici del Task 0, jacobiani con sympy) · `evaluate_ekf.py` (grafici, RMSE, MAE) · `replay_filters.py` (entrambi i filtri sulla stessa bag) · `run_sim_experiment.sh`.
 
-**Riprodurre una bag del robot reale** (per provare altri parametri senza un nuovo esperimento):
-
-```bash
-ros2 bag play --clock 1000 --remap /ekf:=/old_ekf -- path/to/rosbag
-ros2 launch lab04_pkg ekf.launch.py robot:=real use_sim_time:=true
-```
-
-Sul robot reale registrare anche `/camera/landmarks` e `/imu`, altrimenti la bag non si può riprodurre.
-
 **Sul robot**, dopo i quattro programmi del robot (router zenoh, bringup, camera, apriltag):
 
 ```bash
 LANDMARKS=$HOME/tag_positions.txt bash src/lab04_pkg/scripts/robot_task3.sh run1 X Y THETA
 ```
 
-Lo script controlla i topic del robot, compila il pacchetto, avvia l'EKF con i landmark del giorno e registra una bag in `~/g203_bags/`; un solo Ctrl+C ferma tutto in modo pulito. Se l'EKF non parte, i topic grezzi vengono comunque registrati.
+Lo script controlla i topic, compila il pacchetto, avvia l'EKF con i landmark del giorno e registra una bag; un solo Ctrl+C ferma tutto in modo pulito. Se l'EKF non parte, i topic grezzi vengono comunque registrati.
 
-**Robot reale (19/11/2026, robot 3):** il robot è partito dall'origine della mappa, la croce sul pavimento (0, 0, 0). Con il filtro del Task 2, un giro di 172 s tra gli ostacoli ha visto 7 dei 9 tag, e alla fine `/ekf` e `/odom` distavano 0,28 m. Sul robot reale non c'è la posizione vera, quindi questo mostra solo che le due stime concordano tra loro e con le misure dei tag, non quanto sono precise.
+**Riprodurre una bag del robot reale** (registrare anche `/camera/landmarks` e `/imu`):
 
-Cosa abbiamo imparato sul robot:
-- I tag vengono spostati a ogni laboratorio: usare il `tag_positions.txt` del giorno (`LANDMARKS=...`). `config/landmarks_thu1211.yaml` è solo l'arena del 12/11.
-- Con una posa iniziale sbagliata e un solo tag visibile, la posizione ha due soluzioni: in una prova il filtro si è prima fermato su quella sbagliata ed è passato a quella giusta 44 s dopo, quando sono comparsi altri tag. Partire da un punto in cui la camera vede almeno due tag.
-- Il PC del robot non ha internet: copiare il codice con `scp` invece di `git clone`. Cambiare la batteria riavvia tutto il robot, quindi bisogna riavviare tutti e quattro i programmi.
+```bash
+ros2 bag play --clock 1000 --remap /ekf:=/old_ekf -- path/to/rosbag
+ros2 launch lab04_pkg ekf.launch.py robot:=real use_sim_time:=true
+```
+
+Sul robot reale non c'è la posizione vera, quindi gli 0,28 m mostrano solo che le due stime concordano tra loro e con i tag, non quanto sono precise. Cosa abbiamo imparato:
+- I tag vengono spostati a ogni laboratorio: usare il `tag_positions.txt` del giorno.
+- Con una posa iniziale sbagliata e un solo tag visibile, la posizione ha due soluzioni: partire da un punto in cui la camera vede almeno due tag.
+- Il PC del robot non ha internet: copiare il codice con `scp`. Cambiare la batteria riavvia il robot, quindi bisogna riavviare tutti e quattro i programmi.
+
+</details>
 
 ## 3️⃣ R03 — Evitamento ostacoli e inseguimento di un target con DWA
 
-Un controllore Dynamic Window Approach gira a 15 Hz. Campiona (v, ω) all'interno della finestra dinamica, simula ogni traiettoria per 1,5 s e le assegna un punteggio con J = α·heading + β·vel + γ·dist_obst; prima vengono scartate le traiettorie che passerebbero troppo vicino a un ostacolo. Gli ostacoli vengono solo dal LiDAR, ridotto a 24 settori (letture NaN, Inf e zero gestite, picchi su un singolo raggio rimossi con una mediana a 3 punti). Un arresto di sicurezza indipendente basato sul laser termina la prova con `Collision`. Per il Task 2 (inseguire un target in movimento) il punteggio contiene anche vel′ (rallentare vicino al target) e dist_target (mantenere circa 0,8 m e il target nel campo visivo della camera). I risultati sono pubblicati su `/nav_result` (`Goal`, `Collision`, `Timeout`, `Lost`).
+Un controllore Dynamic Window Approach a 15 Hz assegna un punteggio alle traiettorie (v, ω) campionate con J = α·heading + β·vel + γ·dist_obst, usando solo il LiDAR per vedere gli ostacoli. Il Task 2 aggiunge vel′ e dist_target per seguire un target in movimento a circa 0,8 m. I risultati vanno su `/nav_result` (`Goal`, `Collision`, `Timeout`, `Lost`).
 
 ```bash
 ros2 launch turtlebot3_ignition project.launch.py           # mondo di simulazione
 ros2 launch lab07_pkg dwa.launch.py                         # Task 1: goal statico su /goal_pose
-ros2 launch lab07_pkg dwa.launch.py mode:=follow            # Task 2: segue /dynamic_goal_pose
-ros2 launch lab07_pkg dwa.launch.py robot:=real             # Task 3: robot reale, goal statico
-ros2 launch lab07_pkg dwa.launch.py robot:=real mode:=follow target_id:=N   # Task 3: segue l'AprilTag N
+ros2 launch lab07_pkg dwa.launch.py mode:=follow            # Task 2: segue il target in movimento
+ros2 launch lab07_pkg dwa.launch.py robot:=real [mode:=follow target_id:=N]   # Task 3: robot reale
 ```
+
+| Simulazione (mondo del corso `hard_maze.world`) | Risultato |
+|---|---|
+| Task 1: 8 goal × 3 prove | 24 / 24 raggiunti, nessuna collisione |
+| Task 2: traiettoria del cubo rosso fornita dal corso | 3 / 3 prove hanno seguito tutto il primo giro, nessuna collisione |
+
+<details>
+<summary><b>Altro: funzionamento, limiti, strumenti</b></summary>
+
+<br>
+
+- **Scan:** ridotto a 24 settori; letture NaN, Inf e zero gestite, picchi su un singolo raggio rimossi con una mediana a 3 punti.
+- **Sicurezza:** le traiettorie troppo vicine a un ostacolo vengono scartate prima del punteggio, e un arresto di sicurezza indipendente basato sul laser termina la prova con `Collision`.
+- **Inseguimento:** l'orientamento punta ai punti già attraversati dal target; se il robot resta bloccato per 2 s passa a una modalità di recupero che premia solo l'avanzamento.
+- **Limiti:** quattro goal dietro le pareti centrali finiscono in `Timeout` (minimo locale, un limite noto del DWA). Il cubo rosso taglia un angolo a 0,115 m da una parete, quindi lì il robot resta indietro (fino a 3,5–4,9 m) e poi recupera; distanza media sul giro 2,0–2,8 m.
 
 Inviare un goal: `ros2 topic pub --once /goal_pose geometry_msgs/msg/PoseStamped "{header: {frame_id: odom}, pose: {position: {x: 1.5, y: -0.5}}}"`
 
-Simulazione (mondo del corso `hard_maze.world`, robot che parte dall'origine):
-- **Task 1:** 8 goal × 3 prove: 24 / 24 raggiunti, nessuna collisione. Altri quattro goal dietro le pareti centrali finiscono in `Timeout`: il robot resta bloccato in un minimo locale, un limite noto del DWA.
-- **Task 2:** sulla traiettoria del cubo rosso fornita dal corso, 3 / 3 prove hanno seguito tutto il primo giro (circa 21 m) senza collisioni. Il cubo taglia un angolo a 0,115 m da una parete, quindi lì il robot resta indietro (fino a 3,5–4,9 m) e poi recupera; distanza media sul giro 2,0–2,8 m.
+Strumenti in `src/lab07_pkg/scripts/`: `evaluate_nav.py` (tasso di successo, tempo, lunghezza del percorso, distanza dagli ostacoli, grafici da una bag) · `run_goal_trials.sh` + `run_single_trial.py` (prove ripetute in Gazebo) · `offline_sim.py` (test rapidi in puro Python, non sostituisce Gazebo).
 
-Strumenti in `src/lab07_pkg/scripts/`: `evaluate_nav.py` (tasso di successo, tempo, lunghezza del percorso, distanza dagli ostacoli, grafici di velocità e traiettoria da una bag) · `run_goal_trials.sh` + `run_single_trial.py` (prove ripetute in Gazebo) · `offline_sim.py` (simulazione in puro Python per test rapidi, non sostituisce Gazebo).
+</details>
 
 ## 👥 Ecco la squadra SIQUBro
 
