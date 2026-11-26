@@ -150,18 +150,9 @@ ros2 launch lab07_pkg dwa.launch.py robot:=real [mode:=follow target_id:=N]   # 
 
 </details>
 
-## 👥 认识一下 SIQUBro 小分队
+## 👥 小组成员
 
-> 四个人，一台 TurtleBot3，撞墙次数：0（理论上）。
-
-| | 成员 | 官方头衔 | 超能力 |
-|---|---|---|---|
-| 🧭 | **Chen** | 首席里程计官 | 知道小车*以为*自己在哪；它*实际*在哪，仍在调查中。 |
-| 🔦 | **[Jin](https://github.com/Galio1991)** | 激光雷达事务部部长 | 0.2 秒数完 230 条激光，坚称 `inf` 只是"乐观"。 |
-| 🔄 | **Ye** | 九十度转弯部长 | 以 P 控制器般的自信左转右转。 |
-| 🧱 | **Qu** | 墙体关系协调员 | 负责调解小车与 0.5 m 内所有墙壁的关系。 |
-
-**队训：** *少撞墙，多前进。*
+203 组（SIQUBro）：Chen、[Jin](https://github.com/Galio1991)、Qu、Ye。
 
 ## 📜 许可证和代码来源
 

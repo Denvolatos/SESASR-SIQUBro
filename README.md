@@ -150,18 +150,9 @@ Tools in `src/lab07_pkg/scripts/`: `evaluate_nav.py` (success rate, time, path l
 
 </details>
 
-## 👥 Meet the SIQUBro crew
+## 👥 Team
 
-> Four humans, one TurtleBot3, zero walls touched (we hope).
-
-| | Member | Official title | Superpower |
-|---|---|---|---|
-| 🧭 | **Chen** | Chief Odometry Officer | Knows where the robot *thinks* it is. Where it *really* is — still under investigation. |
-| 🔦 | **[Jin](https://github.com/Galio1991)** | Head of LiDAR Affairs | Can count 230 laser rays in 0.2 s and says `inf` is just "optimism". |
-| 🔄 | **Ye** | Minister of 90° Turns | Turns left or right with the confidence of a P controller. |
-| 🧱 | **Qu** | Wall Relations Manager | Negotiates peace between the robot and every wall within 0.5 m. |
-
-**Team motto:** *Bump less, go more.*
+Group 203 (SIQUBro): Chen, [Jin](https://github.com/Galio1991), Qu, Ye.
 
 ## 📜 License and code sources
 
