@@ -1,0 +1,94 @@
+# Simulation parameters for TurtleBot3 Burger in hard_maze.world (Task 1)
+# Launch: ros2 launch lab07_pkg dwa.launch.py robot:=sim mode:=goal
+dwa_node:
+  ros__parameters:
+    use_sim_time: true
+    mode: "goal"
+    goal_source: "topic"            # "topic" (/goal_pose) or "landmark" (one-shot AprilTag)
+    landmark_goal_standoff: 0.5     # [m] backoff from tag in goal/landmark mode (> stop radius)
+    follow_source: "dynamic_goal"   # Gazebo uses /dynamic_goal_pose (no /camera/landmarks bridge)
+
+    # Control and trajectory simulation timing
+    control_rate: 15.0          # [Hz] control loop frequency (dt = 1/15 s)
+    sim_time: 1.5               # [s] rollout horizon (keeps w*sim_time < pi)
+    time_granularity: 0.1       # [s] rollout integration step (distinct from control dt)
+    v_samples: 10
+    w_samples: 21               # odd count so exact w=0.0 is included
+    window_source: "odom"       # "odom" (default) or "last_cmd"
+    enable_recovery_spin: false # optional in-place spin if all paths collide
+    recovery_ang_vel: 0.4       # [rad/s]
+    max_stamp_skew_sec: 0.5     # [s] clock-skew guard for landmark/odom matching
+
+    # TurtleBot3 Burger kinematic limits
+    max_lin_vel: 0.22           # [m/s]
+    min_lin_vel: 0.0            # [m/s]
+    max_ang_vel: 1.5            # [rad/s] capped below 2.84 so 1.5 s rollouts do not wrap > 180 deg
+    min_ang_vel: -1.5           # [rad/s]
+    max_lin_acc: 0.5            # [m/s^2]
+    max_ang_acc: 3.2            # [rad/s^2]
+    robot_radius: 0.105         # [m] circular approximation of Burger footprint
+
+    # Task 1 & Task 2 objective weights: J = a*heading + b*vel(') + g*dist_obst + d*dist_target
+    weight_heading: 0.40        # alpha
+    weight_vel: 0.30            # beta
+    weight_obs: 0.30            # gamma
+    weight_target: 0.35         # delta (Task 2 follow mode only)
+    obstacle_max_dist: 1.0      # [m] saturation cap so distant walls do not stall robot
+    obs_norm_min_span: 0.05     # [m] avoid min-max noise amplification in narrow corridors
+
+    # Task 2 follow-mode shaping
+    slowdown_dist_threshold: 1.2  # [m] start vel' slowdown below this distance
+    desired_target_dist: 0.8      # [m] optimal target distance
+    target_dist_sigma: 0.5        # [m] Gaussian width for distance score
+    camera_fov_half_rad: 0.576    # [rad] ~33 deg half-FoV
+    target_loss_timeout_sec: 2.0  # [s] hold last target briefly, then stop
+    target_jump_threshold: 2.5    # [m] detect red-cube trajectory loop jump
+    follow_use_trail: true        # aim heading at earliest unreached target trail point
+    trail_spacing: 0.10           # [m] min spacing between recorded trail points
+    trail_reach_dist: 0.40        # [m] pop trail point once within this radius
+    stuck_time_sec: 2.0           # [s] low-v duration before entering progress recovery
+    stuck_vel_thresh: 0.03        # [m/s] linear velocity below this counts as stuck
+    stuck_dist_margin: 0.5        # [m] trigger stuck only if dist > desired + margin
+    recovery_exit_dist: 0.3       # [m] exit recovery after moving this distance
+    recovery_exit_margin: 0.2     # [m] exit recovery if dist <= desired + margin
+    recovery_max_sec: 5.0         # [s] max duration of one recovery episode
+    lost_dist: 3.0                # [m] distance threshold for Lost event
+    lost_dist_time_sec: 10.0      # [s] continuous time > lost_dist before Lost stop
+    target_id: -1                 # -1 = nearest landmark (unused in sim dynamic_goal)
+    dynamic_goal_topic: "/dynamic_goal_pose"
+    landmarks_topic: "/camera/landmarks"
+
+    # LiDAR scan processing
+    max_scan_range: 3.5         # [m]
+    min_valid_range: 0.05       # [m]
+    min_valid_ratio: 0.20       # stop if fewer than 20% of rays are valid
+    max_nan_ratio: 0.95         # stop if > 95% of rays are NaN
+    # 3-point median rejects single-ray spikes (~8 mm wide at 0.3 m, ~2.7 cm at 1 m)
+    scan_median_filter: true    # arena walls, boxes, and human legs are unaffected
+    num_ranges: 24              # [12..30] angular sectors
+    nan_policy: "min"           # "min" per lab PDF in simulation
+    laser_offset_x: -0.032      # [m] LiDAR x offset in base frame
+    laser_offset_y: 0.0         # [m]
+    laser_offset_yaw: 0.0       # [rad]
+
+    # Safety, goal management, and timeouts
+    collision_tol: 0.18         # [m] hard-stop surface clearance threshold (in [0.15, 0.25] m)
+    # Gazebo tests (11/25): 0.04 m -> 4/7 collisions; 0.10 m -> 0/7 collisions, 8/8 reachable goals
+    planning_margin: 0.10       # [m] extra DWA planning buffer over hard stop (0.385 vs 0.285 m)
+    band_floor_buffer: 0.03     # [m] margin-band lower floor above hard stop (0.315 m)
+    goal_dist_tol: 0.25         # [m]
+    max_num_steps: 1500         # 100 s at 15 Hz
+    feedback_rate: 50           # publish /distance_to_goal every N steps
+    sensor_timeout_sec: 1.0     # [s] stop if odom or scan is stale
+    require_target_id: false    # simulation uses /dynamic_goal_pose
+
+    # Frames and topics
+    odom_frame: "odom"
+    world_frame: "world"
+    odom_origin_in_world: [0.0, 0.0, 0.0]   # [x, y, yaw] of odom origin in world
+    odom_topic: "/odom"
+    scan_topic: "/scan"
+    goal_topic: "/goal_pose"
+    cmd_vel_topic: "/cmd_vel"
+    result_topic: "/nav_result"
+    distance_topic: "/distance_to_goal"

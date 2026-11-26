@@ -1,0 +1,98 @@
+# Real TurtleBot3 Burger parameters (Task 3)
+# Launch: ros2 launch lab07_pkg dwa.launch.py robot:=real mode:=goal
+dwa_node:
+  ros__parameters:
+    use_sim_time: false
+    mode: "goal"
+    goal_source: "topic"            # "topic" (/goal_pose) or "landmark" (one-shot AprilTag)
+    landmark_goal_standoff: 0.5     # [m] backoff from tag in goal/landmark mode (> 0.305 m stop)
+    follow_source: "landmarks"      # real robot uses /camera/landmarks (AprilTag)
+
+    # Control and trajectory simulation timing
+    control_rate: 15.0          # [Hz]
+    sim_time: 1.5               # [s]
+    time_granularity: 0.1       # [s]
+    v_samples: 10
+    w_samples: 21               # odd count so exact w=0.0 is included
+    # Real robot defaults to last_cmd so static friction at low initial v (0.027 m/s) cannot stall
+    window_source: "last_cmd"   # "last_cmd" on real robot; "odom" in sim
+    enable_recovery_spin: false # optional in-place spin if all paths collide
+    recovery_ang_vel: 0.4       # [rad/s]
+    max_stamp_skew_sec: 0.5     # [s] clock-skew guard for landmark/odom matching
+
+    # Conservative kinematic limits verified on real Burger (10/29 test)
+    max_lin_vel: 0.15           # [m/s] 0.22 m/s stalled forward motion on real robot
+    min_lin_vel: 0.0            # [m/s]
+    max_ang_vel: 1.5            # [rad/s]
+    min_ang_vel: -1.5           # [rad/s]
+    max_lin_acc: 0.4            # [m/s^2]
+    max_ang_acc: 2.0            # [rad/s^2]
+    robot_radius: 0.105         # [m]
+
+    # Task 1 & Task 2 objective weights
+    weight_heading: 0.40        # alpha
+    weight_vel: 0.30            # beta
+    weight_obs: 0.30            # gamma
+    weight_target: 0.35         # delta (Task 2/3 follow mode)
+    obstacle_max_dist: 1.0      # [m]
+    obs_norm_min_span: 0.05     # [m] avoid min-max noise amplification in narrow corridors
+
+    # Task 2/3 follow-mode shaping
+    slowdown_dist_threshold: 1.2  # [m]
+    desired_target_dist: 0.8      # [m] keep person/AprilTag comfortably outside collision_tol
+    target_dist_sigma: 0.5        # [m]
+    camera_fov_half_rad: 0.576    # [rad] ~33 deg half-FoV measured on 11/19
+    target_loss_timeout_sec: 2.0  # [s] stop if tag unseen for > 2 s
+    target_jump_threshold: 2.5    # [m]
+    follow_use_trail: true        # aim heading at earliest unreached target trail point
+    trail_spacing: 0.10           # [m] min spacing between recorded trail points
+    trail_reach_dist: 0.40        # [m] pop trail point once within this radius
+    stuck_time_sec: 2.0           # [s] low-v duration before entering progress recovery
+    stuck_vel_thresh: 0.03        # [m/s]
+    stuck_dist_margin: 0.5        # [m]
+    recovery_exit_dist: 0.3       # [m]
+    recovery_exit_margin: 0.2     # [m]
+    recovery_max_sec: 5.0         # [s]
+    lost_dist: 3.0                # [m] distance threshold for Lost event
+    lost_dist_time_sec: 10.0      # [s] continuous time > lost_dist before Lost stop
+    target_id: -1                 # -1 = nearest visible AprilTag; set >=0 to lock one ID
+    camera_offset_x: 0.0          # [m]
+    camera_offset_y: 0.0          # [m]
+    camera_offset_yaw: 0.0        # [rad]
+    dynamic_goal_topic: "/dynamic_goal_pose"
+    landmarks_topic: "/camera/landmarks"
+
+    # LiDAR scan processing (real LDS-02 returns NaN on open space and range_min = 0.0)
+    max_scan_range: 3.5         # [m]
+    min_valid_range: 0.05       # [m] ignore zero/near-zero readings
+    min_valid_ratio: 0.20       # stop if fewer than 20% of rays are valid
+    max_nan_ratio: 0.95         # stop if > 95% of rays are NaN (all-NaN indistinguishable from open)
+    # 3-point median rejects single-ray LDS-02 spikes (~8 mm at 0.3 m, ~2.7 cm at 1 m)
+    scan_median_filter: true    # arena boxes, walls, and human legs are unaffected
+    num_ranges: 24              # [12..30] angular sectors
+    nan_policy: "max"           # treat NaN as free space on real LDS-02
+    laser_offset_x: -0.032      # [m]
+    laser_offset_y: 0.0         # [m]
+    laser_offset_yaw: 0.0       # [rad]
+
+    # Safety, goal management, and timeouts
+    collision_tol: 0.20         # [m] hard-stop margin on real robot (in [0.15, 0.25] m)
+    # Real arena is narrower (stop=0.305 m, planning=0.405 m); verify on site before tuning
+    planning_margin: 0.10       # [m] extra DWA planning buffer over hard stop (verify on real arena)
+    band_floor_buffer: 0.03     # [m] margin-band lower floor above hard stop (0.335 m)
+    goal_dist_tol: 0.25         # [m]
+    max_num_steps: 1800         # 120 s at 15 Hz
+    feedback_rate: 50           # publish /distance_to_goal every N steps
+    sensor_timeout_sec: 1.0     # [s]
+    require_target_id: true     # must pass target_id:=<N> in follow mode to ignore fixed arena tags
+
+    # Frames and topics
+    odom_frame: "odom"
+    world_frame: "world"
+    odom_origin_in_world: [0.0, 0.0, 0.0]
+    odom_topic: "/odom"
+    scan_topic: "/scan"
+    goal_topic: "/goal_pose"
+    cmd_vel_topic: "/cmd_vel"
+    result_topic: "/nav_result"
+    distance_topic: "/distance_to_goal"
