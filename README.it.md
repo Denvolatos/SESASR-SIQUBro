@@ -152,14 +152,7 @@ Strumenti in `src/lab07_pkg/scripts/`: `evaluate_nav.py` (tasso di successo, tem
 
 ## 👥 Il gruppo
 
-Gruppo 203 (SIQUBro):
-
-| Membro | Città d'origine |
-|---|---|
-| Chen | — |
-| [Jin](https://github.com/Galio1991) | Jianyang, Chengdu (Sichuan) |
-| Qu | Qingdao (Shandong) |
-| Ye | Wenzhou (Zhejiang) |
+Gruppo 203 (SIQUBro): Chen, [Jin](https://github.com/Galio1991), Qu, Ye.
 
 ## 📜 Licenza e origine del codice
 
