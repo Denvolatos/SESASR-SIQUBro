@@ -5,7 +5,7 @@
   <version>0.0.0</version>
   <description>Bump&amp;Go controller for TurtleBot3 (SESASR Lab02/Lab03)</description>
   <maintainer email="siqubro@todo.todo">SIQUBro (SESASR group 203)</maintainer>
-  <license>TODO: License declaration</license>
+  <license>GPL-3.0-or-later</license>
 
   <depend>rclpy</depend>
   <depend>geometry_msgs</depend>

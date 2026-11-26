@@ -5,7 +5,7 @@
   <version>0.0.0</version>
   <description>EKF localization of the TurtleBot3 with landmarks, odometry and IMU</description>
   <maintainer email="siqubro@todo.todo">SIQUBro (SESASR group 203)</maintainer>
-  <license>TODO: License declaration</license>
+  <license>GPL-3.0-or-later</license>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>launch</exec_depend>
