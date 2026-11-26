@@ -9,8 +9,6 @@ TurtleBot3 in simulazione e sul robot reale: Bump&Go, localizzazione con EKF, na
 
 [English](README.md) · [中文](README.zh-CN.md) · [Guida operativa (in inglese)](docs/OPERATION_GUIDE.md) · [Guida al codice (in inglese)](docs/CODE_GUIDE.md) · [Licenza e origine del codice](#-licenza-e-origine-del-codice)
 
-![Traiettoria nel labirinto del Lab02](docs/images/lab02_sim_trajectory.png)
-
 </div>
 
 ## 🗺️ Le tre relazioni
@@ -60,6 +58,8 @@ ros2 launch lab02_pkg bump_and_go.launch.py robot:=real  # robot reale
 ```
 
 Codice finale nel labirinto del Lab02: arrivo dopo 10 svolte in 220 s; errore dell'odometria rispetto alla posizione reale 0,069 m alla fine, 0,073 m al massimo. Sul robot reale la velocità massima è 0,15 m/s: a 0,22 m/s quasi non avanzava.
+
+![Traiettoria nel labirinto del Lab02](docs/images/lab02_sim_trajectory.png)
 
 | Comandi di velocità | Errore dell'odometria |
 |---|---|
