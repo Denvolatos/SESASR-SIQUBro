@@ -152,7 +152,7 @@ Tools in `src/lab07_pkg/scripts/`: `evaluate_nav.py` (success rate, time, path l
 
 ## 👥 Team
 
-Group 203 (SIQUBro): Chen, [Jin](https://github.com/Galio1991), Qu, Ye.
+Group 203 (SIQUBro): Chen, [Jin](https://github.com/Galio1991), [Qu](https://github.com/SheldonSEU), [Ye](https://github.com/SenLanYK).
 
 ## 📜 License and code sources
 

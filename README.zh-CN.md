@@ -152,7 +152,7 @@ ros2 launch lab07_pkg dwa.launch.py robot:=real [mode:=follow target_id:=N]   # 
 
 ## 👥 小组成员
 
-203 组（SIQUBro）：Chen、[Jin](https://github.com/Galio1991)、Qu、Ye。
+203 组（SIQUBro）：Chen、[Jin](https://github.com/Galio1991)、[Qu](https://github.com/SheldonSEU)、[Ye](https://github.com/SenLanYK)。
 
 ## 📜 许可证和代码来源
 

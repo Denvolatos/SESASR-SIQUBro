@@ -152,7 +152,7 @@ Strumenti in `src/lab07_pkg/scripts/`: `evaluate_nav.py` (tasso di successo, tem
 
 ## 👥 Il gruppo
 
-Gruppo 203 (SIQUBro): Chen, [Jin](https://github.com/Galio1991), Qu, Ye.
+Gruppo 203 (SIQUBro): Chen, [Jin](https://github.com/Galio1991), [Qu](https://github.com/SheldonSEU), [Ye](https://github.com/SenLanYK).
 
 ## 📜 Licenza e origine del codice
 
