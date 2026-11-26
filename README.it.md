@@ -157,7 +157,7 @@ Strumenti in `src/lab07_pkg/scripts/`: `evaluate_nav.py` (tasso di successo, tem
 | | Membro | Titolo ufficiale | Superpotere |
 |---|---|---|---|
 | 🧭 | **Chen** | Direttore Generale dell'Odometria | Sa dove il robot *crede* di essere. Dove sia *davvero* — indagini in corso. |
-| 🔦 | **Jin** | Capo degli Affari LiDAR | Conta 230 raggi laser in 0,2 s e sostiene che `inf` sia solo "ottimismo". |
+| 🔦 | **[Jin](https://github.com/Galio1991)** | Capo degli Affari LiDAR | Conta 230 raggi laser in 0,2 s e sostiene che `inf` sia solo "ottimismo". |
 | 🔄 | **Ye** | Ministro delle Svolte a 90° | Gira a destra o a sinistra con la sicurezza di un controllore P. |
 | 🧱 | **Qu** | Responsabile dei Rapporti con le Pareti | Mantiene la pace tra il robot e ogni parete entro 0,5 m. |
 

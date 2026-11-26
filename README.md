@@ -157,7 +157,7 @@ Tools in `src/lab07_pkg/scripts/`: `evaluate_nav.py` (success rate, time, path l
 | | Member | Official title | Superpower |
 |---|---|---|---|
 | 🧭 | **Chen** | Chief Odometry Officer | Knows where the robot *thinks* it is. Where it *really* is — still under investigation. |
-| 🔦 | **Jin** | Head of LiDAR Affairs | Can count 230 laser rays in 0.2 s and says `inf` is just "optimism". |
+| 🔦 | **[Jin](https://github.com/Galio1991)** | Head of LiDAR Affairs | Can count 230 laser rays in 0.2 s and says `inf` is just "optimism". |
 | 🔄 | **Ye** | Minister of 90° Turns | Turns left or right with the confidence of a P controller. |
 | 🧱 | **Qu** | Wall Relations Manager | Negotiates peace between the robot and every wall within 0.5 m. |
 
