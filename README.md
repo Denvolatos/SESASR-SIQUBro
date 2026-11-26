@@ -59,7 +59,7 @@ ros2 launch lab02_pkg bump_and_go.launch.py robot:=real  # real robot
 
 Final code in the Lab02 maze: goal reached after 10 turns in 220 s; odometry error vs ground truth 0.069 m at the end, 0.073 m maximum. On the real robot the speed limit is 0.15 m/s: at 0.22 m/s it hardly drove forward.
 
-![Trajectory in the Lab02 maze](docs/images/lab02_sim_trajectory.png)
+<p align="center"><img src="docs/images/lab02_sim_trajectory.png" alt="Trajectory in the Lab02 maze" width="420"></p>
 
 | Velocity commands | Odometry error |
 |---|---|

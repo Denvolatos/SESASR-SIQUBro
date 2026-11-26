@@ -59,7 +59,7 @@ ros2 launch lab02_pkg bump_and_go.launch.py robot:=real  # 真车
 
 最终版代码在 Lab02 迷宫：转弯 10 次、220 秒到达终点；里程计相对真实位置的误差结束时 0.069 m，最大 0.073 m。真车速度上限为 0.15 m/s：0.22 m/s 时基本不前进。
 
-![Lab02 迷宫里的轨迹](docs/images/lab02_sim_trajectory.png)
+<p align="center"><img src="docs/images/lab02_sim_trajectory.png" alt="Lab02 迷宫里的轨迹" width="420"></p>
 
 | 速度指令 | 里程计误差 |
 |---|---|

@@ -59,7 +59,7 @@ ros2 launch lab02_pkg bump_and_go.launch.py robot:=real  # robot reale
 
 Codice finale nel labirinto del Lab02: arrivo dopo 10 svolte in 220 s; errore dell'odometria rispetto alla posizione reale 0,069 m alla fine, 0,073 m al massimo. Sul robot reale la velocità massima è 0,15 m/s: a 0,22 m/s quasi non avanzava.
 
-![Traiettoria nel labirinto del Lab02](docs/images/lab02_sim_trajectory.png)
+<p align="center"><img src="docs/images/lab02_sim_trajectory.png" alt="Traiettoria nel labirinto del Lab02" width="420"></p>
 
 | Comandi di velocità | Errore dell'odometria |
 |---|---|
