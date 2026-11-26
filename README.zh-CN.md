@@ -7,7 +7,7 @@ TurtleBot3 仿真 + 真车：Bump&Go、EKF 定位、DWA 导航。
 
 ![ROS 2 Humble](https://img.shields.io/badge/ROS_2-Humble-22314E?logo=ros) ![Python 3.10](https://img.shields.io/badge/Python-3.10-3776AB?logo=python&logoColor=white) ![Robot: TurtleBot3](https://img.shields.io/badge/robot-TurtleBot3-orange) ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
 
-[English](README.md) · [操作流程](docs/OPERATION_GUIDE.md#-中文) · [代码介绍](docs/CODE_GUIDE.md#-中文) · [许可证和代码来源](#-许可证和代码来源)
+[English](README.md) · [Italiano](README.it.md) · [操作流程](docs/OPERATION_GUIDE.md#-中文) · [代码介绍](docs/CODE_GUIDE.md#-中文) · [许可证和代码来源](#-许可证和代码来源)
 
 ![Lab02 迷宫里的轨迹](docs/images/lab02_sim_trajectory.png)
 

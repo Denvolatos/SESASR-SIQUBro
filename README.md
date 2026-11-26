@@ -7,7 +7,7 @@ TurtleBot3 in simulation and on the real robot: Bump&Go, EKF localization, DWA n
 
 ![ROS 2 Humble](https://img.shields.io/badge/ROS_2-Humble-22314E?logo=ros) ![Python 3.10](https://img.shields.io/badge/Python-3.10-3776AB?logo=python&logoColor=white) ![Robot: TurtleBot3](https://img.shields.io/badge/robot-TurtleBot3-orange) ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
 
-[中文](README.zh-CN.md) · [Operation Guide](docs/OPERATION_GUIDE.md) · [Code Guide](docs/CODE_GUIDE.md) · [License and code sources](#-license-and-code-sources)
+[中文](README.zh-CN.md) · [Italiano](README.it.md) · [Operation Guide](docs/OPERATION_GUIDE.md) · [Code Guide](docs/CODE_GUIDE.md) · [License and code sources](#-license-and-code-sources)
 
 ![Trajectory in the Lab02 maze](docs/images/lab02_sim_trajectory.png)
 
